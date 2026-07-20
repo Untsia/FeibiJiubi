@@ -1,0 +1,55 @@
+<div class="tool-container">
+    <div class="page-head">
+      <h1 class="page-title">抽卡分析</h1>
+    </div>
+    <div class="tool-header">
+        <div id="uid-dropdown" class="custom-dropdown">
+            <div class="selected-display" data-value="">请选择 UID</div>
+            <ul class="options-list"></ul>
+        </div>
+        <div id="status-display" class="status-display">刷新将读取云鸣潮的唤取链接，请根据提示操作即可</div>
+        <div class="tool-actions">
+            <button id="refresh-data" class="refresh-button">刷新数据</button>
+            <button id="hidePoolsBtn" class="refresh-button secondary" title="隐藏卡池">隐藏卡池</button>
+        </div>
+    </div>
+    <div class="record-wrapper">
+        <div id="analysis-tabbar" class="analysis-tabbar">
+            <button class="analysis-tab active" data-view="intuitive">统计</button>
+            <button class="analysis-tab" data-view="detail">详情</button>
+        </div>
+        <div id="sub-view-row" class="sub-view-row" style="display:none;">
+            <div id="sub-view-tabbar" class="analysis-tabbar">
+                <button class="analysis-tab active" data-mode="overview">数据总览</button>
+                <button class="analysis-tab" data-mode="diff">差值对比</button>
+            </div>
+            <div class="custom-dropdown ai-switch account-sync-inline" id="account-switch-sync">
+                <div class="selected-display" title="切换同步账号">选择账号</div>
+                <ul class="options-list"></ul>
+            </div>
+        </div>
+        <div id="record-display" class="record-display"></div>
+    </div>
+</div>
+
+<div id="hidePoolsModal" class="modal">
+  <div class="modal-content-game">
+    <div class="modal-header-game">
+      <div class="modal-title-group">
+        <h2>隐藏卡池</h2>
+        <p class="modal-subtitle">勾选需要隐藏的卡池 · 已选 <span id="hidePoolsCount">0</span> 项</p>
+      </div>
+      <button id="closeHidePoolsModal" class="close-button">&times;</button>
+    </div>
+    <div class="modal-body-game">
+      <div id="hidePoolsList" class="hide-pools-list"></div>
+    </div>
+    <div class="modal-footer-game">
+      <button id="hidePoolsSelectAll" class="modal-button">全选</button>
+      <button id="hidePoolsConfirm" class="modal-button primary">应用</button>
+    </div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="styles/gameTools/gachaWuwa.css?v=2">
+<link rel="stylesheet" href="./styles/gameTools.css?v=2">

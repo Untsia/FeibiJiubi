@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>菲比啾比</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/settings.css">
+    <script src="scripts/gameTools/gacha.js"></script>
+    <script src="scripts/tools/syncNotification.js"></script>
+    <script src="scripts/tools/modalManager.js"></script>
+    <script src="./scripts/import/chart.js"></script>
+    <script src="./scripts/import/echarts.min.js"></script>
+</head>
+<body>
+    <div class="aurora-bg" aria-hidden="true"></div>
+    <header class="title-bar">
+        <div class="title-brand">
+            <img src="../assets/icon.png" class="title-brand-logo" alt="菲比啾比" />
+            <span class="title-brand-name">菲比啾比</span>
+        </div>
+        <div class="window-controls">
+            <span id="minimize" class="control-button" title="最小化" aria-label="最小化">
+                <svg width="13" height="13" viewBox="0 0 13 13"><line x1="2.5" y1="6.5" x2="10.5" y2="6.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            </span>
+            <span id="maximize" class="control-button" title="最大化" aria-label="最大化">
+                <svg width="13" height="13" viewBox="0 0 13 13"><rect x="3" y="3" width="7" height="7" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+            </span>
+            <span id="close" class="control-button" title="关闭" aria-label="关闭">
+                <svg width="13" height="13" viewBox="0 0 13 13"><line x1="3.5" y1="3.5" x2="9.5" y2="9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="9.5" y1="3.5" x2="3.5" y2="9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            </span>
+        </div>
+    </header>
+
+    <div class="container">
+        <nav class="sidebar">
+            <ul>
+                <li class="nav-item active" data-page="gameTools" data-view="analysis">分析</li>
+                <li class="nav-item" data-page="gameTools" data-view="qizang">奇藏</li>
+                <li class="nav-item" data-page="gameTools" data-view="level">等级</li>
+                <li class="nav-item" data-page="settings">设置</li>
+            </ul>
+        </nav>
+        <main id="content" class="content"></main>
+    </div>
+    <script src="scripts/background.js"></script>
+    <script src="scripts/renderer.js"></script>
+</body>
+</html>

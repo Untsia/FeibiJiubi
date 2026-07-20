@@ -1,0 +1,469 @@
+/* ===== 游戏工具页 · 基于统一设计 Token ===== */
+
+body { overflow: hidden; }
+
+/* 主容器 */
+#tool-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+#tool-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-5);
+  padding: var(--space-5);
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  align-content: start;
+  box-sizing: border-box;
+}
+
+/* 页面头部标题区 */
+.page-head { margin-bottom: 2px; }
+.page-title { margin: 0; font-size: 22px; font-weight: 700; color: var(--text-strong); letter-spacing: 0.3px; }
+.page-sub { margin: 5px 0 0; font-size: 13px; color: var(--text-secondary); }
+
+/* 顶部输入框与按钮 */
+.tool-container {
+  padding: 0;
+  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.tool-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* 右侧操作按钮组 */
+.tool-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+#uid-input {
+  width: 200px;
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+  color: var(--text-primary);
+}
+
+/* 状态提示（轻量毛玻璃药丸 + 强调点，撑满中间区域） */
+.status-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 9px 16px;
+  flex: 1 1 auto;
+  min-width: 180px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background-color 0.3s ease;
+  overflow: auto;
+}
+.status-display::before {
+  content: "";
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.status-display:hover { background: var(--surface-strong); }
+
+/* 刷新 / 隐藏卡池 / 设置 等按钮（统一高度，与主色按钮基线一致） */
+.refresh-button {
+  height: 40px;
+  padding: 0 20px;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 88px;
+}
+
+/* ===== 模态（游戏内弹窗） ===== */
+.modal-game {
+  display: none;
+  position: fixed;
+  width: 100%; height: 100%;
+  background: var(--scrim);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.25s ease;
+}
+.modal-content-game {
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  width: 440px;
+  max-width: 92vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-soft);
+  animation: slideIn 0.3s ease;
+}
+.modal-header-game {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+.modal-header-game h2 { margin: 0; font-size: 1.3rem; font-weight: 700; color: var(--text-strong); }
+
+.close-button {
+  background: transparent;
+  border: none;
+  padding: 4px 12px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  box-shadow: none;
+  transition: color 0.25s ease, background 0.25s ease, transform 0.12s ease;
+}
+.close-button:hover { background: var(--accent-soft); color: var(--accent); filter: none; }
+.close-button:active { transform: scale(0.92); }
+
+.modal-body-game { flex: 1; overflow-y: auto; margin-bottom: var(--space-3); }
+
+/* UID 选择 chips */
+.uid-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  justify-items: center;
+}
+.uid-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.25s ease, transform 0.12s ease, border-color 0.25s ease;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+.uid-item:hover { background: var(--accent-soft); transform: translateY(-2px); }
+.uid-item:active { transform: scale(0.97); }
+.uid-item.selected {
+  background: var(--gradient-primary);
+  color: #fff;
+  border-color: transparent;
+  transform: scale(1.04);
+}
+
+.modal-footer-game {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+.modal-button {
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--text-primary);
+  transition: background 0.25s ease, transform 0.12s ease, border-color 0.25s ease;
+}
+.modal-button:hover { background: var(--accent-soft); filter: none; }
+.modal-button:active { transform: scale(0.96); }
+.modal-button.primary {
+  background: var(--gradient-primary);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 3px 10px var(--accent-soft);
+}
+
+/* 表单行 */
+.form-row { display: flex; align-items: center; justify-content: space-between; margin: var(--space-3) 0; gap: var(--space-3); }
+.form-label { min-width: 72px; color: var(--text-secondary); font-size: 13px; }
+.form-value { flex: 1; display: flex; justify-content: flex-start; align-items: center; gap: 10px; color: var(--text-primary); }
+.time-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  outline: none;
+  background: var(--surface-strong);
+  color: var(--text-primary);
+  font-family: var(--font);
+}
+.time-input:focus { border-color: var(--accent); background: var(--accent-soft); }
+.danger-hint { margin-top: var(--space-3); font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+
+/* ===== 隐藏卡池 · 重设计 ===== */
+.modal-title-group { display: flex; flex-direction: column; gap: 3px; }
+.modal-subtitle { margin: 0; font-size: 0.78rem; color: var(--text-secondary); letter-spacing: 0.01em; }
+.modal-subtitle span { color: var(--accent); font-weight: 700; }
+
+.hide-pools-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 2px;
+}
+
+/* 单条卡池行卡片：玻璃质感 + 勾选指示器 */
+.pool-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.14s ease, box-shadow 0.25s ease;
+}
+.pool-row:hover {
+  background: var(--accent-soft);
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+}
+.pool-row:active { transform: scale(0.985); }
+
+/* 左侧强调点 */
+.pool-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-soft);
+}
+
+/* 卡池名称 */
+.pool-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 右侧圆形勾选指示器 */
+.pool-check {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.pool-check::after {
+  content: '';
+  width: 6px;
+  height: 10px;
+  margin-top: -2px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform 0.2s cubic-bezier(0.2,0,0,1);
+}
+
+/* 选中态 */
+.pool-row.selected {
+  background: var(--gradient-soft);
+  border-color: var(--accent);
+  box-shadow: 0 4px 16px var(--accent-soft);
+}
+.pool-row.selected .pool-dot { background: var(--accent-contrast); box-shadow: none; }
+.pool-row.selected .pool-check {
+  background: var(--gradient-primary);
+  border-color: transparent;
+  box-shadow: 0 2px 8px var(--accent-soft);
+}
+.pool-row.selected .pool-check::after { transform: rotate(45deg) scale(1); }
+
+/* 加载器 */
+.loader {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  font-size: 15px;
+  color: var(--text-muted);
+}
+.loader.active { display: flex; }
+
+/* 全局返回按钮（游戏内） */
+#global-back-button {
+  position: absolute;
+  top: var(--space-5);
+  left: var(--space-5);
+  z-index: 10;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 50%;
+  width: 46px; height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 24px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: transform 0.25s ease, background-color 0.25s ease, opacity 0.25s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+#global-back-button.visible { opacity: 1; pointer-events: auto; }
+#global-back-button:hover { background: var(--accent-soft); transform: scale(1.08); }
+#global-back-button:active { transform: scale(0.94); }
+
+/* 子页淡入淡出 */
+#subpage-content {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  box-sizing: border-box;
+  display: none; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+}
+#subpage-content.visible { display: block; opacity: 1; pointer-events: auto; }
+
+.fade-out { opacity: 0; pointer-events: none; transition: opacity 0.3s ease-in-out; }
+.fade-in { opacity: 1; pointer-events: auto; transition: opacity 0.3s ease-in-out; }
+
+.hidden { opacity: 0; pointer-events: none; display: none; transition: opacity 0.3s ease-in-out; }
+.visible { opacity: 1; pointer-events: auto; display: block; transition: opacity 0.3s ease-in-out; }
+
+/* ===================== 详情页分页器（数据页面设置） ===================== */
+.detail-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: 0;
+  padding: 9px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-card);
+}
+.detail-pager-nav,
+.detail-pager-opts {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.detail-page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-strong);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, transform .12s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.detail-page-btn .pg-ico { width: 18px; height: 18px; }
+.detail-page-btn:hover:not(:disabled) {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 4px 12px var(--accent-soft);
+}
+.detail-page-btn:active:not(:disabled) { transform: scale(0.9); }
+.detail-page-btn:disabled { opacity: .35; cursor: not-allowed; }
+.detail-page-info {
+  min-width: 58px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .3px;
+}
+.detail-page-info b { color: var(--accent); font-weight: 700; }
+.detail-page-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.detail-page-size select {
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text-primary);
+  background-color: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 28px 6px 11px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23767c8a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  transition: border-color .2s ease, background-color .2s ease;
+}
+.detail-page-size select:focus {
+  outline: none;
+  border-color: var(--accent);
+  background-color: var(--accent-soft);
+}
+/* 下拉弹层（原生 option 在 Chromium 中始终不透明白底，需显式覆盖配色以防白底白字） */
+.detail-page-size select option {
+  background-color: var(--surface-solid);
+  color: var(--text-primary);
+}
+.detail-page-size select option:hover,
+.detail-page-size select option:checked {
+  background-color: var(--accent);
+  color: var(--accent-contrast);
+}
+.detail-total {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.detail-total b { color: var(--text-strong); font-weight: 700; }

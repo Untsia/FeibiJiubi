@@ -1,0 +1,85 @@
+{
+  "name": "feibijiubi",
+  "version": "1.0.0",
+  "main": "src/main.js",
+  "description": "菲比啾比 - 鸣潮抽卡分析工具",
+  "author": "feibijiubi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Untsia/FeibiJiubi.git"
+  },
+  "homepage": "https://github.com/Untsia/FeibiJiubi",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test \"tests/*.test.js\"",
+    "prebuild": "node scripts/clean-dist.js",
+    "build": "electron-builder"
+  },
+  "keywords": [
+    "wuthering-waves",
+    "鸣潮",
+    "抽卡分析",
+    "唤取",
+    "gacha",
+    "electron"
+  ],
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
+    "electron-packager": "^17.1.2"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "better-sqlite3": "^12.11.1",
+    "chart.js": "^4.4.6",
+    "cheerio": "^1.0.0",
+    "dayjs": "^1.11.13",
+    "echarts": "^5.6.0",
+    "electron-store": "^10.0.0",
+    "electron-updater": "^6.3.9",
+    "exceljs": "^4.4.0",
+    "fs-extra": "^11.2.0",
+    "iconv-lite": "^0.6.3",
+    "node-fetch": "^3.3.2",
+    "ps-node": "^0.1.6",
+    "qs": "^6.13.0",
+    "sqlite3": "^6.0.1",
+    "swiper": "^11.1.15",
+    "winreg": "^1.2.5",
+    "ws": "^8.18.0"
+  },
+  "build": {
+    "appId": "com.feibijiubi.app",
+    "productName": "菲比啾比",
+    "copyright": "Copyright © 2026",
+    "releaseInfo": {
+      "releaseNotesFile": "release-notes.md"
+    },
+    "files": [
+      "src/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "asar": true,
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ],
+      "icon": "src/assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Untsia",
+        "repo": "FeibiJiubi"
+      }
+    ]
+  }
+}
