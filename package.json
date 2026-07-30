@@ -72,7 +72,11 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "FeibiJiubi-${version}-windows-${arch}-setup.exe"
+    },
+    "portable": {
+      "artifactName": "FeibiJiubi-${version}-windows-${arch}-portable.exe"
     },
     "publish": [
       {

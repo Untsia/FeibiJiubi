@@ -3,7 +3,7 @@ if (process.platform === 'win32') {
   try { require('child_process').execSync('chcp 65001 > nul', { stdio: 'ignore' }); } catch (e) {}
 }
 
-const { app, BrowserWindow, Tray, Menu, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, dialog, shell, screen } = require('electron');
 const path = require('path');
 const axios = require('axios');
 
@@ -78,6 +78,7 @@ function createWindow() {
         minHeight: 600,
         backgroundColor: '#1e1e1e',
         icon: path.join(__dirname, 'assets', 'icon.ico'),
+        show: false, // 先隐藏，定位完成后再显示，避免位置跳变闪烁
         webPreferences: {
             sandbox: false,
             preload: path.join(__dirname, 'preload.js'), // 指定 preload 脚本
@@ -87,8 +88,24 @@ function createWindow() {
         },
         frame: false
     });
+    // 定位：水平居中 + 垂直偏上
+    // 注意：本机 Windows 开启 DPI 缩放时，screen 模块返回的是「物理像素」，
+    // 而 BrowserWindow 的 x/y 用的是「逻辑像素」，两者不一致会把窗口推到右下。
+    // 用 scaleFactor 还原为逻辑像素后再算，保证与窗口坐标同体系。
+    const disp = screen.getPrimaryDisplay();
+    const scale = disp.scaleFactor || 1;
+    const sw = Math.round(disp.workAreaSize.width / scale);
+    const sh = Math.round(disp.workAreaSize.height / scale);
+    const winW = 1250, winH = 700;
+    const x = Math.max(0, Math.round((sw - winW) / 2)); // 水平绝对居中
+    // 窗口中心约落在屏幕高度 40% 处（偏上），可按需调整 0.40
+    let y = Math.round(sh * 0.40 - winH / 2);
+    if (y < 0) y = 0;
+    if (y + winH > sh) y = Math.max(0, sh - winH);
+    mainWindow.setBounds({ x, y, width: winW, height: winH });
     mainWindow.loadFile('src/renderer/index.html');
     loadBackground(mainWindow);
+    mainWindow.show();
 
     // 定义后全局导出 mainWindow
     global.mainWindow = mainWindow; // 更新global.mainWindow

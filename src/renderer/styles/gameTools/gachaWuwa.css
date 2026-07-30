@@ -383,12 +383,9 @@
   border-radius: 8px;
   object-fit: cover;
   flex-shrink: 0;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
   background: transparent;
 }
-.record-avatar.q5 { box-shadow: 0 0 8px rgba(243, 213, 138, 0.5); }
-.record-avatar.q4 { box-shadow: 0 0 8px rgba(201, 182, 255, 0.45); }
-.record-avatar.q3 { box-shadow: 0 0 8px rgba(122, 162, 255, 0.45); }
+
 
 /* 空状态（图标 + 标题 + 引导，统一毛玻璃视觉） */
 .empty-state {
@@ -822,11 +819,11 @@
   animation: cardIn 0.5s cubic-bezier(0.2, 0, 0, 1) both;
 }
 .intuitive-card.pool-all {
-  background: linear-gradient(180deg, rgba(124, 131, 255, 0.12), rgba(255, 255, 255, 0) 44%), var(--surface);
-  border-color: rgba(124, 131, 255, 0.32);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 12%, transparent), rgba(255, 255, 255, 0) 44%), var(--surface);
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
   box-shadow:
     0 10px 28px -12px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(124, 131, 255, 0.18),
+    0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 .intuitive-card.pool-all .intuitive-card-title-text {
@@ -883,7 +880,7 @@
   text-align: center;
 }
 .mini-value {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   line-height: 1.1;
   text-align: center;
@@ -893,6 +890,10 @@
   -webkit-text-fill-color: transparent;
   color: transparent;
   word-break: break-all;
+}
+.mini-value-dec {
+  font-size: 16px;
+  font-weight: 800;
 }
 body.theme-light .mini-value {
   background: none;
@@ -924,11 +925,10 @@ body.theme-light .mini-value {
   height: 48px;
   border-radius: 10px;
   object-fit: cover;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 .intuitive-char-card .record-star {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -947,15 +947,16 @@ body.theme-light .mini-value {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 18px;
-  padding: 0 6px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.02em;
   color: #ff8a98;
   background: rgba(255, 99, 110, 0.18);
   border: 1px solid rgba(255, 99, 110, 0.45);
-  border-radius: 8px;
+  border-radius: 50%;
   box-shadow: 0 1px 4px rgba(255, 99, 110, 0.28);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -969,15 +970,16 @@ body.theme-light .mini-value {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 18px;
-  padding: 0 6px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.02em;
   color: #ffd24a;
   background: rgba(255, 196, 0, 0.18);
   border: 1px solid rgba(255, 196, 0, 0.45);
-  border-radius: 8px;
+  border-radius: 50%;
   box-shadow: 0 1px 4px rgba(255, 196, 0, 0.28);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -1003,7 +1005,6 @@ body.theme-light .mini-value {
   margin-top: 4px;
   padding: 1px 8px;
   border-radius: var(--radius-pill);
-  background: var(--accent-soft);
 }
 .st-pity { --mc: #ffb454; }
 .st-avglimited { --mc: #c79bff; }
@@ -1043,7 +1044,7 @@ body.theme-light .intuitive-card {
   box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 body.theme-light .intuitive-card.pool-all {
-  box-shadow: var(--shadow-card), 0 0 0 1px rgba(124, 131, 255, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-card), 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 body.theme-light #view-detail.active {
   box-shadow: var(--shadow-card);
@@ -1054,12 +1055,6 @@ body.theme-light .analysis-tabbar {
   box-shadow: none;
 }
 
-/* 角色头像图本身是「去背透明 PNG」（透明区约占一半），浅色模式下这些透明区
-   会透出浅色页面/卡片背景（接近白），看起来像「白底包裹头像」。
-   给头像一个明确非白的淡冷灰底，消除刺眼白块；深色模式背景深，保持透明即可。 */
-body.theme-light .record-avatar {
-  background: #e9ecf3;
-}
 
 /* 左侧卡池类型筛选（并入统一卡片，用竖分隔线区隔） */
 .detail-sidebar {
@@ -1153,7 +1148,7 @@ body.theme-light .record-avatar {
 .detail-row { transition: background 0.16s ease; }
 .detail-row:hover td { background: var(--surface-strong); }
 .detail-name { display: flex; align-items: center; justify-content: flex-start; gap: 11px; }
-.detail-name .record-avatar { width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28); }
+.detail-name .record-avatar { width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0; }
 .detail-name span { font-weight: 600; color: var(--text-strong); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .detail-quality { font-weight: 700; white-space: nowrap; }
 .detail-quality .q-badge { min-width: 40px; }

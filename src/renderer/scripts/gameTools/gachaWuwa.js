@@ -13,6 +13,13 @@
   });
 })();
 
+function fmtMiniValue(v) {
+  const s = String(v);
+  const m = s.match(/^(\d+)\.(\d{1,2})(%?)$/);
+  if (m) return m[1] + '<span class="mini-value-dec">.' + m[2] + m[3] + '</span>';
+  return s;
+}
+
 function forceRepaintBackdrop(root) {
   if (!root) return;
   const els = root.querySelectorAll('*');
@@ -976,8 +983,8 @@ function renderIntuitiveView(records, pools) {
             </div>`).join('') : '<div class="intuitive-empty">暂无五星</div>';
         let dateRange = '暂无';
         if (allTimes.length) { allTimes.sort(); dateRange = (allTimes[0] || '').split(' ')[0] + ' - ' + (allTimes[allTimes.length - 1] || '').split(' ')[0]; }
-        const fiveRate = allTotal ? (Math.round(allFive / allTotal * 100) + '%') : '—';
-        const fourRate = allTotal ? (Math.round(allFour / allTotal * 100) + '%') : '—';
+        const fiveRate = allTotal ? ((allFive / allTotal * 100).toFixed(2) + '%') : '—';
+        const fourRate = allTotal ? ((allFour / allTotal * 100).toFixed(2) + '%') : '—';
         const statDefs = [
             { label: '卡池数量', value: visibleCats.length, cls: 'st-pity' },
             { label: '抽卡总数', value: allTotal, cls: 'st-nodev' },
@@ -991,7 +998,7 @@ function renderIntuitiveView(records, pools) {
         const miniHtml = statDefs.map(s => `
               <div class="mini-card ${s.cls}">
                 <div class="mini-title">${s.label}</div>
-                <div class="mini-value">${s.value}</div>
+                <div class="mini-value">${fmtMiniValue(s.value)}</div>
               </div>`).join('');
         const card = document.createElement('div');
         card.className = 'intuitive-card pool-all';
@@ -1018,17 +1025,17 @@ function renderIntuitiveView(records, pools) {
         if (!total) return; // 没有抽数的卡池不显示
         const five = recs.filter(r => r.quality_level === 5).length;
         const four = recs.filter(r => r.quality_level === 4).length;
-        const fiveRate = total ? (Math.round(five / total * 100) + '%') : '—';
-        const fourRate = total ? (Math.round(four / total * 100) + '%') : '—';
+        const fiveRate = total ? ((five / total * 100).toFixed(2) + '%') : '—';
+        const fourRate = total ? ((four / total * 100).toFixed(2) + '%') : '—';
         const isCharLimited = cat.key.startsWith('角色') && !cat.key.includes('常驻');
         // 已垫（当前保底进度）：从最新一条往前数到最近一个五星，recs 为倒序（最新在前），与详情视图 calculateLastDraws 一致
         const currentPity = calculateLastDraws(recs, 5);
         // 平均五星
         const fiveAvgRaw = total ? calculateDrawsBetween(recs, 5) : null;
-        const fiveAvg = (typeof fiveAvgRaw === 'number' && !isNaN(fiveAvgRaw)) ? String(Math.round(fiveAvgRaw)) : '—';
+        const fiveAvg = (typeof fiveAvgRaw === 'number' && !isNaN(fiveAvgRaw)) ? String(fiveAvgRaw.toFixed(2)) : '—';
         // 平均限定（仅角色限定卡池有意义）
         const avgLimitedRaw = isCharLimited ? calculateUpAverage(recs) : null;
-        const avgLimited = (typeof avgLimitedRaw === 'number' && !isNaN(avgLimitedRaw)) ? String(Math.round(avgLimitedRaw)) : '—';
+        const avgLimited = (typeof avgLimitedRaw === 'number' && !isNaN(avgLimitedRaw)) ? String(avgLimitedRaw.toFixed(2)) : '—';
         // 不歪概率（仅角色限定卡池有意义）
         let noDeviation = '—';
         if (isCharLimited) {
@@ -1082,7 +1089,7 @@ function renderIntuitiveView(records, pools) {
         const miniHtml = statDefs.map(s => `
               <div class="mini-card ${s.cls}">
                 <div class="mini-title">${s.label}</div>
-                <div class="mini-value">${s.value}</div>
+                <div class="mini-value">${fmtMiniValue(s.value)}</div>
               </div>`).join('');
         const card = document.createElement('div');
         card.className = 'intuitive-card ' + poolAccentClass;
@@ -1346,14 +1353,14 @@ function renderQizangView() {
     };
     const body = DATA.map(d => {
       if (qizangSubMode === 'overview') {
-        return '<tr><td class="grow-name">' + d.name + '</td><td>' + d.count + '</td><td>' + d.unit + '</td>' + numCell(d.total) + '</tr>';
+        return '<tr><td class="grow-name">' + d.name + '</td><td class="grow-qty">' + d.count + '</td><td class="grow-qty">' + d.unit + '</td>' + numCell(d.total) + '</tr>';
       }
       const user = effUser(d);
       const lack = Math.max(0, d.count - user);
       const stars = lack * d.unit;
       return '<tr><td class="grow-name">' + d.name + '</td>'
         + '<td><input class="grow-input" type="number" min="0" data-name="' + d.name + '" value="' + user + '" /></td>'
-        + '<td class="cell-lack">' + lack + '</td>'
+        + '<td class="grow-qty cell-lack">' + lack + '</td>'
         + numCell(stars) + '</tr>';
     }).join('');
     const totalRow = qizangSubMode === 'overview'
