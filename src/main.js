@@ -72,8 +72,8 @@ function createTray() {
 
 function createWindow() {
     mainWindow = new BrowserWindow({
-        width: 1250,
-        height: 700,
+        width: 1081,
+        height: 680,
         minWidth: 1000,
         minHeight: 600,
         backgroundColor: '#1e1e1e',
@@ -96,16 +96,34 @@ function createWindow() {
     const scale = disp.scaleFactor || 1;
     const sw = Math.round(disp.workAreaSize.width / scale);
     const sh = Math.round(disp.workAreaSize.height / scale);
-    const winW = 1250, winH = 700;
+    const winW = 1100, winH = 680;
     const x = Math.max(0, Math.round((sw - winW) / 2)); // 水平绝对居中
     // 窗口中心约落在屏幕高度 40% 处（偏上），可按需调整 0.40
     let y = Math.round(sh * 0.40 - winH / 2);
     if (y < 0) y = 0;
     if (y + winH > sh) y = Math.max(0, sh - winH);
     mainWindow.setBounds({ x, y, width: winW, height: winH });
+    // DPI 适配：让 1 CSS 像素对应 scale 个物理像素，字体以原生密度渲染，
+    // 避免高分屏（125%/150%/200%）下系统位图拉伸导致文字发虚。
+    // 必须在 loadFile 之前设置，否则首次绘制仍会被缩放。
+    if (scale !== 1) {
+        mainWindow.webContents.setZoomFactor(scale);
+    }
     mainWindow.loadFile('src/renderer/index.html');
     loadBackground(mainWindow);
     mainWindow.show();
+
+    // 跨屏 DPI 变化适配：当显示器缩放比例改变（如拖到不同缩放的屏幕、
+    // 或系统缩放设置变更）时，按新 scaleFactor 重设 zoomFactor，避免文字再次发虚。
+    screen.on('display-metrics-changed', () => {
+        if (!mainWindow || mainWindow.isDestroyed()) return;
+        const newScale = screen.getPrimaryDisplay().scaleFactor || 1;
+        if (newScale !== 1) {
+            mainWindow.webContents.setZoomFactor(newScale);
+        } else {
+            mainWindow.webContents.setZoomFactor(1);
+        }
+    });
 
     // 定义后全局导出 mainWindow
     global.mainWindow = mainWindow; // 更新global.mainWindow

@@ -98,12 +98,16 @@ document.addEventListener("DOMContentLoaded", () => {
         loadScriptViaBlob("scripts/settings.js", () => {});
     }
 
+    // 侧边栏底部「设置」按钮（独立于导航 ul），提前声明以便导航点击时同步清除高亮
+    const settingsBtn = document.querySelector('.sidebar-settings');
+
     // 监听侧边栏导航（分析子视图 / 设置页）
     navItems.forEach(item => {
         item.addEventListener("click", () => {
             const page = item.dataset.page;
             const view = item.dataset.view;
             navItems.forEach(n => n.classList.remove("active"));
+            if (settingsBtn) settingsBtn.classList.remove("active");
             item.classList.add("active");
             if (currentPage !== page) {
                 pendingView = view || null;
@@ -116,5 +120,31 @@ document.addEventListener("DOMContentLoaded", () => {
     // 默认加载游戏工具；并立即应用一次背景（兜底，确保启动即有背景，不依赖进入设置页）
     if (typeof window.applyAppBackground === 'function') window.applyAppBackground();
     loadPage("gameTools");
+
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            navItems.forEach(n => n.classList.remove('active'));
+            settingsBtn.classList.add('active');
+            if (currentPage !== 'settings') loadPage('settings');
+        });
+    }
+
+    // 侧边栏底部「浅色/深色」切换按钮（无文字，仅图标）
+    const themeBtn = document.getElementById('sidebar-theme-toggle');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', async () => {
+            const isLight = document.body.classList.contains('theme-light');
+            const next = isLight ? 'dark' : 'light';
+            try {
+                if (window.electronAPI && typeof window.electronAPI.saveBackgroundSettings === 'function') {
+                    await window.electronAPI.saveBackgroundSettings('themeMode', next);
+                }
+            } catch (e) { /* 保存失败也不阻塞视觉切换 */ }
+            if (typeof window.applyAppBackground === 'function') window.applyAppBackground();
+            // 同步设置页的浅/深按钮高亮
+            if (typeof window.highlightThemeMode === 'function') window.highlightThemeMode(next);
+            window.dispatchEvent(new CustomEvent('theme-mode-changed', { detail: { mode: next } }));
+        });
+    }
 
 });

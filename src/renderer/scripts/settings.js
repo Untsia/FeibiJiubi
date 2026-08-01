@@ -2,7 +2,6 @@
 
      // 处理背景图片选择
     const backgroundImageInput = document.getElementById("background-path");
-    const backgroundOpacityInput = document.getElementById("backgroundOpacityInput");
 
     // 数据路径设置
     const dataFilePathInput = document.getElementById('dataFile-path');
@@ -17,7 +16,6 @@
 
     // 当前背景状态（用于各事件重算）
     let currentThemeMode = 'dark';
-    let currentOpacity = '0.5';
     let currentBgImage = '';
 
     // ===== 自定义主题配色 =====
@@ -80,6 +78,10 @@
         root.setProperty('--accent-contrast', contrast);
         root.setProperty('--gradient-primary', 'linear-gradient(135deg, ' + hex + ' 0%, rgb(' + rgbStr(accent2) + ') 100%)');
         root.setProperty('--gradient-soft', 'linear-gradient(135deg, rgba(' + rgbStr(rgb) + ', 0.18), rgba(' + rgbStr(accent2) + ', 0.18))');
+        // 氛围光晕跟随主题色派生（避免背景极光固定为紫色）
+        root.setProperty('--glow-a', 'rgba(' + rgbStr(rgb) + ', 0.20)');
+        root.setProperty('--glow-b', 'rgba(' + rgbStr(rgb) + ', 0.16)');
+        root.setProperty('--glow-c', 'rgba(' + rgbStr(rgb) + ', 0.12)');
     }
 
     const accentSwatches = Array.from(document.querySelectorAll('#themeSwatches .swatch:not(.swatch-custom)'));
@@ -236,27 +238,20 @@
 
 
 
-    // 显示背景亮度滑块当前值（0-1 → 百分比）
-    function updateOpacityValue() {
-        const el = document.getElementById('backgroundOpacityInput');
-        const out = document.getElementById('backgroundOpacityValue');
-        if (!el || !out) return;
-        const v = parseFloat(el.value) || 0;
-        out.textContent = Math.round(v * 100) + '%';
-    }
     // 高亮主题模式按钮（仅 data-mode 按钮，排除关闭行为等无 data-mode 的按钮）
     function highlightThemeMode(mode) {
         document.querySelectorAll('.theme-option[data-mode]').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.mode === mode);
         });
     }
+    // 暴露给侧边栏主题按钮复用，实现双向同步
+    window.highlightThemeMode = highlightThemeMode;
 
     // 加载背景信息
     function loadBackgroundSettings() {
         highlightThemeMode('dark'); // 首次加载默认选中深色，避免未返回 themeMode 时无高亮
         window.electronAPI.invoke('loadBackgroundSettings').then(settings => {
             currentBgImage = settings.backgroundImage || '';
-            currentOpacity = settings.backgroundOpacity || '0.5';
             currentThemeMode = settings.themeMode || 'dark';
 
             // 检查背景图片路径是否存在
@@ -266,11 +261,6 @@
                 // 如果有背景图片
                 document.getElementById('background-path').value = settings.backgroundImage || '';
             }
-            // 检查透明度设置是否存在
-            if (settings.backgroundOpacity) {
-                document.getElementById('backgroundOpacityInput').value = settings.backgroundOpacity;
-            }
-            updateOpacityValue();
             window.applyAppBackground();
 
             // 高亮当前主题选项
@@ -301,22 +291,6 @@
         });
     }
 
-    // 监听背景透明度变化
-    if (backgroundOpacityInput) {
-        backgroundOpacityInput.addEventListener("change", async (event) => {
-            const opacity = event.target.value;
-            currentOpacity = opacity;
-            updateOpacityValue();
-            await window.electronAPI.saveBackgroundSettings("backgroundOpacity", opacity);
-        });
-        backgroundOpacityInput.addEventListener("input", async (event) => {
-            const opacity = event.target.value;
-            currentOpacity = opacity;
-            updateOpacityValue();
-            window.applyAppBackground();
-        });
-    }
-
     // 主题模式（浅色/深色）切换
     document.querySelectorAll('.theme-option[data-mode]').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -325,7 +299,13 @@
             document.querySelectorAll('.theme-option[data-mode]').forEach(b => b.classList.toggle('active', b === btn));
             await window.electronAPI.saveBackgroundSettings("themeMode", mode);
             window.applyAppBackground();
+            window.dispatchEvent(new CustomEvent('theme-mode-changed', { detail: { mode: mode } }));
         });
+    });
+
+    // 监听来自侧边栏的切换，实时同步设置页高亮
+    window.addEventListener('theme-mode-changed', (e) => {
+        if (e && e.detail && e.detail.mode) highlightThemeMode(e.detail.mode);
     });
 
 

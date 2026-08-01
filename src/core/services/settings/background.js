@@ -84,7 +84,7 @@ ipcMain.handle('saveBackgroundSettings', async (event, key, value) => {
 async function loadBackgroundSettings() {
     try {
         const rows = await new Promise((resolve, reject) => {
-            db.all('SELECT key, value FROM settings WHERE key IN ("backgroundImage", "backgroundOpacity", "themeMode", "accentColor")', [], (err, rows) => {
+            db.all('SELECT key, value FROM settings WHERE key IN ("backgroundImage", "themeMode", "accentColor")', [], (err, rows) => {
                 if (err) {
                     reject('加载背景设置失败:' + err);
                 } else {
@@ -97,7 +97,7 @@ async function loadBackgroundSettings() {
             acc[row.key] = row.value;
             return acc;
         }, {});
-        return Object.assign({ themeMode: 'dark', accentColor: '#7c83ff', backgroundOpacity: '0.5', backgroundImage: null }, result); // 返回数据（含默认）
+        return Object.assign({ themeMode: 'dark', accentColor: '#7c83ff', backgroundImage: null }, result); // 返回数据（含默认）
     } catch (err) {
         console.error(err);
         return {};  // 出现错误时返回空对象
@@ -125,7 +125,7 @@ async function loadBackground(mainWindow) {
         // 请求加载背景设置
         const settings = await loadBackgroundSettings();
         const themeMode = settings.themeMode || 'dark';
-        const bgOpacity = settings.backgroundOpacity || '0.5'; // 默认透明度
+        const bgOpacity = '0.5'; // 背景遮罩固定默认透明度（亮度调节已移除）
         const accentJs = buildAccentInject(settings.accentColor);
         const isLight = themeMode === 'light';
         const baseRGB = isLight ? '245, 246, 250' : '24, 26, 34'; // 浅色 #F5F6FA / 深色 #181A22，非纯白
@@ -156,13 +156,11 @@ async function loadBackground(mainWindow) {
 
 ipcMain.handle('restoreDefaultBackgroundSettings', async () => {
     try {
-        // 默认背景图片路径和透明度
+        // 默认背景图片路径
         const defaultBackgroundImage = null;
-        const defaultOpacity = '0.5';  // 默认透明度
 
         // 更新数据库
         await db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', ['backgroundImage', defaultBackgroundImage]);
-        await db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', ['backgroundOpacity', defaultOpacity]);
         await db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', ['themeMode', 'dark']);
 
         console.log('已恢复默认背景设置');

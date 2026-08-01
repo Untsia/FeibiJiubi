@@ -130,7 +130,7 @@ function calculateNoDeviationRate(records) {
     });
 
     // 不歪概率 = 不歪五星数 / 五星总数
-    return `${(upCount / fiveStarRecords.length * 100).toFixed(2)}%`;
+    return `${(upCount / fiveStarRecords.length * 100).toFixed(2)}`;
 }
 
 

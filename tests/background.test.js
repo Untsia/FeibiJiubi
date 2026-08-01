@@ -27,7 +27,6 @@ test('loadBackground 无图深色使用纯色底', async () => {
 test('loadBackground 浅色模式加 theme-light', async () => {
   const { fakeWin, get } = captureLoader([
     { key: 'themeMode', value: 'light' },
-    { key: 'backgroundOpacity', value: '0.5' },
   ]);
   await loadBackground(fakeWin);
   const js = get();
@@ -40,7 +39,6 @@ test('loadBackground 有图使用渐变遮罩 + 图片', async () => {
   const img = 'C:\\Users\\me\\bg.jpg';
   const { fakeWin, get } = captureLoader([
     { key: 'themeMode', value: 'dark' },
-    { key: 'backgroundOpacity', value: '0.5' },
     { key: 'backgroundImage', value: img },
   ]);
   await loadBackground(fakeWin);
@@ -51,9 +49,9 @@ test('loadBackground 有图使用渐变遮罩 + 图片', async () => {
 
 // ---------- 场景 4：浅色模式提高遮罩不透明度下限（≥0.8） ----------
 test('loadBackground 浅色模式遮罩下限 0.8', async () => {
+  // 浅色模式固定默认遮罩 0.5 低于可读下限 0.8，应抬到 0.8 保证可读性
   const { fakeWin, get } = captureLoader([
     { key: 'themeMode', value: 'light' },
-    { key: 'backgroundOpacity', value: '0.3' }, // 低于 0.8 应被抬到 0.8
     { key: 'backgroundImage', value: 'C:\\x.jpg' },
   ]);
   await loadBackground(fakeWin);

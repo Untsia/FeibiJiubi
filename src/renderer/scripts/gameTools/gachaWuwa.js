@@ -397,12 +397,20 @@ async function loadGachaRecords(uid) {
             <div class="detail-content">
                 <div class="detail-table-scroll">
                     <table class="detail-table">
+                        <colgroup>
+                            <col class="col-avatar">
+                            <col class="col-name">
+                            <col class="col-quality">
+                            <col class="col-pool">
+                            <col class="col-time">
+                        </colgroup>
                         <thead>
                             <tr>
+                                <th class="detail-th-avatar">头像</th>
                                 <th>名称</th>
-                                <th class="detail-th-filter" data-filter="quality">星级 <span class="th-caret">&#9662;</span></th>
+                                <th class="detail-th-filter" data-filter="quality">星级</th>
                                 <th>卡池</th>
-                                <th class="detail-th-filter" data-filter="time">时间 <span class="th-caret">&#9662;</span></th>
+                                <th class="detail-th-filter" data-filter="time">时间</th>
                             </tr>
                         </thead>
                         <tbody id="detail-tbody"></tbody>
@@ -468,7 +476,8 @@ async function loadGachaRecords(uid) {
                 const t = r.time || r.timestamp || '';
                 return `
                     <tr class="detail-row q${r.quality_level}" data-time="${escapeHtml(t)}">
-                        <td class="detail-name">${recordAvatarHtml(r)}<span>${escapeHtml(r.name || '')}</span></td>
+                        <td class="detail-avatar"><span class="record-avatar-wrap">${recordAvatarHtml(r)}</span></td>
+                        <td class="detail-name"><span class="detail-name-text">${escapeHtml(r.name || '')}</span></td>
                         <td class="detail-quality"><span class="q-badge">${r.quality_level} 星</span></td>
                         <td class="detail-pool">${escapeHtml(r.card_pool_type || '')}</td>
                         <td class="detail-time">${escapeHtml(t)}</td>
@@ -494,7 +503,7 @@ async function loadGachaRecords(uid) {
         prevBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderRows(); } });
         nextBtn.addEventListener('click', () => { currentPage++; renderRows(); });
         sizeSel.addEventListener('change', () => { pageSize = parseInt(sizeSel.value, 10); currentPage = 1; renderRows(); });
-        // ===== 表头点击筛选：星级 / 时间自定义区间 =====
+        // ===== 表头点击筛选：星级 / 时间自定义区间（小浮层，居中在列表头下方）=====
         const detailContent = viewEl.querySelector('.detail-content');
         const starTh = viewEl.querySelector('th[data-filter="quality"]');
         const timeTh = viewEl.querySelector('th[data-filter="time"]');
@@ -504,12 +513,13 @@ async function loadGachaRecords(uid) {
         starPop.id = 'star-filter-pop';
         starPop.innerHTML = `
             <div class="dfp-title">按星级筛选</div>
-            <div class="dfp-date-list" id="star-option-list">
-                <button type="button" class="dfp-date" data-star="5">5 星</button>
-                <button type="button" class="dfp-date" data-star="4">4 星</button>
-                <button type="button" class="dfp-date" data-star="3">3 星</button>
+            <div class="dfp-option-list" id="star-option-list">
+                <button type="button" class="dfp-option" data-star="5">5 星</button>
+                <button type="button" class="dfp-option" data-star="4">4 星</button>
+                <button type="button" class="dfp-option" data-star="3">3 星</button>
             </div>
             <div class="dfp-actions">
+                <button type="button" id="star-confirm" class="dfp-btn primary">确定</button>
                 <button type="button" id="star-clear" class="dfp-btn ghost">清除</button>
             </div>
         `;
@@ -518,19 +528,32 @@ async function loadGachaRecords(uid) {
         timePop.id = 'time-filter-pop';
         timePop.innerHTML = `
             <div class="dfp-title">按日期筛选</div>
-            <div class="dfp-date-list" id="time-date-list"></div>
+            <div class="dfp-option-list column" id="time-date-list"></div>
             <div class="dfp-actions">
+                <button type="button" id="time-confirm" class="dfp-btn primary">确定</button>
                 <button type="button" id="time-clear" class="dfp-btn ghost">清除</button>
             </div>
         `;
         detailContent.appendChild(starPop);
         detailContent.appendChild(timePop);
 
+        // 居中在触发列表头下方，并做左右边界防护避免被内容区边缘遮挡
         function positionPop(pop, th) {
             const tr = th.getBoundingClientRect();
             const cr = detailContent.getBoundingClientRect();
-            pop.style.left = Math.max(8, tr.left - cr.left) + 'px';
-            pop.style.top = (tr.bottom - cr.top + 6) + 'px';
+            const popW = pop.offsetWidth || 260;
+            const popH = pop.offsetHeight || 160;
+            // 水平：优先让浮层中心对齐列中心
+            let left = (tr.left - cr.left) + (tr.width - popW) / 2;
+            // 左边界防护
+            if (left < 4) left = 4;
+            // 右边界防护：内容区右缘 - 浮层宽 - 4
+            const maxLeft = cr.width - popW - 4;
+            if (left > maxLeft) left = Math.max(4, maxLeft);
+            pop.style.left = left + 'px';
+            // 垂直：列表头正下方
+            let top = (tr.bottom - cr.top) + 8;
+            pop.style.top = top + 'px';
         }
         function closePops(except) {
             if (starPop !== except) { starPop.classList.remove('open'); starTh.classList.remove('open'); }
@@ -540,16 +563,27 @@ async function loadGachaRecords(uid) {
             closePops(pop);
             if (pop === timePop) renderTimeOptions();
             if (pop === starPop) syncStarOptions();
-            positionPop(pop, th);
             pop.classList.add('open');
             th.classList.add('open');
+            positionPop(pop, th);
         }
         function syncStarOptions() {
-            starPop.querySelectorAll('.dfp-date[data-star]').forEach(function (b) {
+            starPop.querySelectorAll('.dfp-option[data-star]').forEach(function (b) {
                 const v = parseInt(b.dataset.star, 10);
                 b.classList.toggle('active', starFilter.has(v));
             });
             starTh.classList.toggle('filtered', starFilter.size > 0);
+        }
+        function renderTimeOptions() {
+            const base = currentPool === 'all'
+                ? filteredRecords.slice()
+                : filteredRecords.filter(r => r.card_pool_type === currentPool);
+            const dates = [...new Set(base.map(r => (recTime(r).split(' ')[0] || '')))].filter(Boolean).sort().reverse();
+            const listEl = timePop.querySelector('#time-date-list');
+            listEl.innerHTML = dates.map(d =>
+                '<button type="button" class="dfp-option' + (timeFilter.has(d) ? ' active' : '') + '" data-date="' + d + '">' + d + '</button>'
+            ).join('') || '<div class="dfp-empty">无可用日期</div>';
+            timeTh.classList.toggle('filtered', timeFilter.size > 0);
         }
 
         starTh.addEventListener('click', (e) => {
@@ -563,7 +597,7 @@ async function loadGachaRecords(uid) {
             openPop(timePop, timeTh);
         });
         starPop.querySelector('#star-option-list').addEventListener('click', function (e) {
-            const btn = e.target.closest('.dfp-date');
+            const btn = e.target.closest('.dfp-option');
             if (!btn) return;
             e.stopPropagation();
             const v = parseInt(btn.dataset.star, 10);
@@ -581,18 +615,12 @@ async function loadGachaRecords(uid) {
             currentPage = 1;
             renderRows();
         });
-        function renderTimeOptions() {
-            const base = currentPool === 'all'
-                ? filteredRecords.slice()
-                : filteredRecords.filter(r => r.card_pool_type === currentPool);
-            const dates = [...new Set(base.map(r => (recTime(r).split(' ')[0] || '')))].filter(Boolean).sort().reverse();
-            const listEl = timePop.querySelector('#time-date-list');
-            listEl.innerHTML = dates.map(d =>
-                '<button type="button" class="dfp-date' + (timeFilter.has(d) ? ' active' : '') + '" data-date="' + d + '">' + d + '</button>'
-            ).join('') || '<div class="dfp-empty">无可用日期</div>';
-        }
+        starPop.querySelector('#star-confirm').addEventListener('click', function (e) {
+            e.stopPropagation();
+            closePops();
+        });
         timePop.querySelector('#time-date-list').addEventListener('click', function (e) {
-            const btn = e.target.closest('.dfp-date');
+            const btn = e.target.closest('.dfp-option');
             if (!btn) return;
             e.stopPropagation();
             const d = btn.dataset.date;
@@ -610,6 +638,10 @@ async function loadGachaRecords(uid) {
             if (timePop.classList.contains('open')) renderTimeOptions();
             currentPage = 1;
             renderRows();
+        });
+        timePop.querySelector('#time-confirm').addEventListener('click', function (e) {
+            e.stopPropagation();
+            closePops();
         });
 
         [starPop, timePop].forEach(function (p) { p.addEventListener('click', function (e) { e.stopPropagation(); }); });
@@ -983,8 +1015,8 @@ function renderIntuitiveView(records, pools) {
             </div>`).join('') : '<div class="intuitive-empty">暂无五星</div>';
         let dateRange = '暂无';
         if (allTimes.length) { allTimes.sort(); dateRange = (allTimes[0] || '').split(' ')[0] + ' - ' + (allTimes[allTimes.length - 1] || '').split(' ')[0]; }
-        const fiveRate = allTotal ? ((allFive / allTotal * 100).toFixed(2) + '%') : '—';
-        const fourRate = allTotal ? ((allFour / allTotal * 100).toFixed(2) + '%') : '—';
+        const fiveRate = allTotal ? ((allFive / allTotal * 100).toFixed(2)) : '—';
+        const fourRate = allTotal ? ((allFour / allTotal * 100).toFixed(2)) : '—';
         const statDefs = [
             { label: '卡池数量', value: visibleCats.length, cls: 'st-pity' },
             { label: '抽卡总数', value: allTotal, cls: 'st-nodev' },
@@ -1025,8 +1057,8 @@ function renderIntuitiveView(records, pools) {
         if (!total) return; // 没有抽数的卡池不显示
         const five = recs.filter(r => r.quality_level === 5).length;
         const four = recs.filter(r => r.quality_level === 4).length;
-        const fiveRate = total ? ((five / total * 100).toFixed(2) + '%') : '—';
-        const fourRate = total ? ((four / total * 100).toFixed(2) + '%') : '—';
+        const fiveRate = total ? ((five / total * 100).toFixed(2)) : '—';
+        const fourRate = total ? ((four / total * 100).toFixed(2)) : '—';
         const isCharLimited = cat.key.startsWith('角色') && !cat.key.includes('常驻');
         // 已垫（当前保底进度）：从最新一条往前数到最近一个五星，recs 为倒序（最新在前），与详情视图 calculateLastDraws 一致
         const currentPity = calculateLastDraws(recs, 5);

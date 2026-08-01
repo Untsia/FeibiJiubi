@@ -242,7 +242,8 @@ body { overflow: hidden; }
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 13px 16px;
+  min-height: 52px;
+  padding: 14px 18px;
   border-radius: var(--radius);
   background: var(--surface);
   border: 1px solid var(--border);

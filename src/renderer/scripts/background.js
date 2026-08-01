@@ -4,7 +4,7 @@
     function applyAppBackground() {
         if (!window.electronAPI || typeof window.electronAPI.invoke !== 'function') return;
         window.electronAPI.invoke('loadBackgroundSettings').then(function (settings) {
-            const opacity = settings.backgroundOpacity || '0.5';
+            const opacity = '0.5'; // 背景遮罩固定默认透明度（不再提供亮度调节）
             const themeMode = settings.themeMode || 'dark';
             const imagePath = settings.backgroundImage || '';
             const isLight = themeMode === 'light';
