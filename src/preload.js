@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     send: (channel, data) => {ipcRenderer.send(channel, data);},
     openExternal: (url) => ipcRenderer.send('open-external', url),
     refreshGachaRecords: (manualUrl) => ipcRenderer.invoke('refresh-gacha-records', manualUrl),
+    importGachaFromGame: () => ipcRenderer.invoke('import-gacha-from-game'),
     getGachaRecords: (playerId) => ipcRenderer.invoke('get-gacha-records', playerId),
     getLastQueryUid: () => ipcRenderer.invoke('get-last-query-uid'),
     getPlayerUIDs: () => ipcRenderer.invoke('get-player-uids'),

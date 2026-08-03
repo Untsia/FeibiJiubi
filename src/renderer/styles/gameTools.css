@@ -53,6 +53,11 @@ body { overflow: hidden; }
   flex-shrink: 0;
 }
 
+/* 账号下拉框不被压缩，始终保持自身宽度 */
+.custom-dropdown {
+  flex-shrink: 0;
+}
+
 #uid-input {
   width: 200px;
   padding: 10px 12px;
@@ -71,15 +76,21 @@ body { overflow: hidden; }
   font-size: 13px;
   color: var(--text-secondary);
   padding: 9px 16px;
-  flex: 1 1 auto;
-  min-width: 180px;
+  flex: 1 1 0;
+  min-width: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   transition: background-color 0.3s ease;
-  overflow: auto;
+}
+/* 提示文字：在空间不足时单行截断省略，避免撑爆把右侧按钮挤到第二行 */
+.status-display .status-text {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .status-display::before {
   content: "";

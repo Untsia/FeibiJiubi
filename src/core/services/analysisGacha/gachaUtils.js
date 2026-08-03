@@ -234,10 +234,12 @@ async function insertGachaLogs(logs, playerId, event) {
 
 // 一次性拉取某玩家所有卡池的最新时间戳，避免逐个卡池的 N+1 查询
 async function getLatestTimestampsForPlayer(playerId) {
+    // player_id 列是 INTEGER，playerId 可能来自 URL 是字符串，转 Number 确保节点 sqlite3 绑定匹配
+    const pid = playerId != null && playerId !== '' ? Number(playerId) : null;
     return new Promise((resolve, reject) => {
         db.all(
             'SELECT card_pool_type, MAX(timestamp) AS latestTimestamp FROM gacha_logs WHERE player_id = ? GROUP BY card_pool_type',
-            [playerId],
+            [pid],
             (err, rows) => {
                 if (err) return reject(err);
                 const map = {};

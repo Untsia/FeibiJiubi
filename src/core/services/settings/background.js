@@ -60,7 +60,7 @@ function buildAccentInject(accentColor) {
         'document.documentElement.style.setProperty("--accent-2", "' + a2 + '");' +
         'document.documentElement.style.setProperty("--accent-soft", "' + soft + '");' +
         'document.documentElement.style.setProperty("--accent-contrast", "' + contrast + '");' +
-        'document.documentElement.style.setProperty("--gradient-primary", "linear-gradient(135deg, "' + accentColor + '" 0%, "' + a2 + '" 100%)");' +
+        'document.documentElement.style.setProperty("--gradient-primary", "linear-gradient(135deg, ' + accentColor + ' 0%, ' + a2 + ' 100%)");' +
         'document.documentElement.style.setProperty("--gradient-soft", "linear-gradient(135deg, rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.18), rgba(' + accent2.r + ', ' + accent2.g + ', ' + accent2.b + ', 0.18))");';
 }
 

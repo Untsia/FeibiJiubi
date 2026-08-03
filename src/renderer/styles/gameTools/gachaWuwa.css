@@ -869,6 +869,9 @@
   border-color: color-mix(in srgb, var(--accent) 32%, transparent);
   box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 16%, transparent);
 }
+.mini-card.clickable {
+  cursor: pointer;
+}
 .mini-title {
   font-size: 11px;
   color: var(--text-muted);

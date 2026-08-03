@@ -79,9 +79,7 @@ async function loadPlayerUIDs(defaultUid) {
             if (confirmed) {
                 try {
                     await window.electronAPI.invoke('delete-gacha-records', uid, 'gacha_logs');
-                    window.__initCount = (window.__initCount || 0) + 1;
-    const lastUid = await window.electronAPI.getLastQueryUid();
-    console.log('[DIAG-INIT] #' + window.__initCount + ' lastUid=', lastUid);
+                    const lastUid = await window.electronAPI.getLastQueryUid();
                     await loadPlayerUIDs(lastUid); // 加载玩家 UID 下拉框
                     await loadGachaRecords(lastUid); // 加载对应记录
                     animationMessage(true, `成功删除 UID: ${uid} 的记录`);
@@ -93,7 +91,8 @@ async function loadPlayerUIDs(defaultUid) {
         });
         // 将删除按钮添加到选项中
         option.appendChild(deleteBtn);
-        if (uid === defaultUid) {
+        // UID 在数据库中是 INTEGER，而调用方可能传入字符串，必须统一按字符串比较
+        if (String(uid) === String(defaultUid)) {
             selectedDisplay.textContent = uid;
             option.classList.add('active');
         }
@@ -167,8 +166,9 @@ function _accountLabel(a) {
 async function renderAccountSwitch(containerEl, target) {
   if (!containerEl) return;
   try {
-    const region = (_accountState.isGlobal != null) ? _accountState.isGlobal : false;
-    const res = await window.electronAPI.invoke('list-treasure-accounts', { isGlobal: region });
+    // 启动时区服尚未确定：传 null 让主进程返回国服+国际服全部账号
+    // （与 WutheringWavesBox 一致：自动列出所有启动器登录态账号，无需用户操作）
+    const res = await window.electronAPI.invoke('list-treasure-accounts', { isGlobal: null });
     let accounts = (res && res.success && res.accounts) ? res.accounts : [];
     // 游戏本地账号状态（无需启动器）：用于离线兜底与自动选中当前账号
     let gameState = null;
@@ -195,6 +195,15 @@ async function renderAccountSwitch(containerEl, target) {
     function setActive(idx) { activeIdx = idx; display.textContent = _accountLabel(accounts[idx]); list.querySelectorAll('.dropdown-option').forEach((it, i) => it.classList.toggle('active', i === idx)); }
     list.innerHTML = accounts.map((a, i) => '<li class="dropdown-option" data-idx="' + i + '">' + _accountLabel(a) + '</li>').join('');
     setActive(activeIdx);
+    // 自动选中（匹配游戏UID或第一个账号）后立即写入选中态并拉取该账号实时奇藏/等级——
+    // 无需用户手动点击，启动即自动同步当前账号数据（对齐 WutheringWavesBox 体验）
+    const autoA = accounts[activeIdx];
+    if (autoA) {
+      _accountState.oauthCode = autoA.oauthCode;
+      _accountState.isGlobal = autoA.isGlobal;
+      _saveAccount({ oauthCode: autoA.oauthCode, isGlobal: autoA.isGlobal });
+      syncTreasureBoxes();
+    }
     const closeMenu = () => { list.classList.remove('show'); if (window.__accDocHandler) { document.removeEventListener('click', window.__accDocHandler, true); window.__accDocHandler = null; } };
     const openMenu = () => { if (accounts.length < 1) return; list.classList.add('show'); window.__accDocHandler = (ev) => { if (!containerEl.contains(ev.target)) closeMenu(); }; document.addEventListener('click', window.__accDocHandler, true); };
     display.onclick = (e) => { e.stopPropagation(); if (list.classList.contains('show')) closeMenu(); else openMenu(); };
@@ -220,6 +229,7 @@ function bindAccountCard() {
 }
 
 async function loadGachaRecords(uid) {
+ try {
     const myLoadToken = ++gachaLoadToken;
     currentUid = uid;
     // 仅拉取当前账号的记录，避免多账号时把全库记录都传回再过滤
@@ -232,12 +242,10 @@ async function loadGachaRecords(uid) {
     container.innerHTML = ''; // 清空显示内容
     console.log('Container cleared:', container.innerHTML);
 
-    const filteredRecords = records.filter(r => r.player_id === uid);
-    try {
-      const types = {};
-      filteredRecords.forEach(function (r) { types[r.card_pool_type] = (types[r.card_pool_type] || 0) + 1; });
-      console.error('[DIAG-FILTER] uid=', uid, 'total=', records.length, 'filtered=', filteredRecords.length, 'types=', JSON.stringify(types));
-    } catch (e) { console.log('[DIAG-FILTER-ERR]', e); }
+    // player_id 在 SQLite 中是 INTEGER，uid 可能是字符串（来自 dataset / String() 转换），
+    // 直接用 === 会全部过滤掉导致「有数据却显示空/ 不跳转」，必须统一按字符串比较
+    const uidStr = String(uid);
+    const filteredRecords = records.filter(r => String(r.player_id) === uidStr);
 
     const prevView = currentAnalysisView; // 上次切换账号前所在的子视图（由 switchAnalysisView 维护），侧边栏 nav-item 的 data-view 恒为 intuitive，不能作为判断依据
     // 切换账号并发保护：已有更新的账号加载在途时，丢弃本次渲染，避免旧账号数据覆盖新账号
@@ -274,10 +282,15 @@ async function loadGachaRecords(uid) {
     // 取得第一条记录的 lang 属性，若不存在则默认使用 'zh-cn'
     const lang = filteredRecords[0].lang || 'zh-cn';
     // 根据 lang 从后端获取对应的 commonItems
-    commonItems = await window.electronAPI.invoke('get-common-items','wuWa', lang);
+    try {
+      commonItems = await window.electronAPI.invoke('get-common-items','wuWa', lang);
+      if (!Array.isArray(commonItems)) commonItems = [];
+    } catch (e) {
+      console.error('[commonItems] 获取常驻列表失败，降级为空数组', e);
+      commonItems = [];
+    }
 
     const pools = categorizeRecords(filteredRecords);
-    console.log('[DIAG-LR] uid=', uid, 'total=', records.length, 'filtered=', filteredRecords.length, 'pools=', Object.keys(pools).join('|'));
     const GACHA_TYPE_ORDER = [
         "角色活动唤取", "武器活动唤取", "角色联动唤取", "武器联动唤取","角色新旅唤取", "武器新旅唤取", "角色忆旅唤取", "武器忆旅唤取",
         "角色常驻唤取", "武器常驻唤取", "新手限定唤取", "新手自选唤取",
@@ -653,7 +666,7 @@ async function loadGachaRecords(uid) {
         renderRows();
     }
 
-    renderDetailView();
+    try { renderDetailView(); } catch (e) { console.error('详情视图渲染失败', e); }
     window.__renderDetailView = renderDetailView; // 缓存引用，供应用隐藏卡池后重渲染详情视图
     try { renderIntuitiveView(filteredRecords, pools); } catch (e) { console.error('直观视图渲染失败', e); }
     try { renderTableView(filteredRecords); } catch (e) { console.error('表格视图渲染失败', e); }
@@ -666,6 +679,9 @@ async function loadGachaRecords(uid) {
     // 修复禁用硬件加速时 backdrop-filter 局部重建后的视觉扭曲
     forceRepaintBackdrop(container);
 
+ } catch (e) {
+    console.error('[loadGachaRecords] 渲染过程中发生未捕获异常，已降级保护：', e);
+ }
 }
 
 /* ---------- 详情页 卡池内 概览/详细 子标签切换 ---------- */
@@ -704,9 +720,7 @@ function initScrollLogic() {
 
 // 监听 UID 切换
 async function gachaWuwaInit() {
-    window.__initCount = (window.__initCount || 0) + 1;
     const lastUid = await window.electronAPI.getLastQueryUid();
-    console.log('[DIAG-INIT] #' + window.__initCount + ' lastUid=', lastUid);
     await loadPlayerUIDs(lastUid); // 加载玩家 UID 下拉框
     await loadGachaRecords(lastUid); // 加载对应记录
     initScrollLogic(); // 初始化滚动逻辑
@@ -763,9 +777,34 @@ async function gachaWuwaInit() {
         } finally {
             // 无论请求是否成功，启用按钮
             refreshButton.disabled = false;
-            refreshButton.innerText = '刷新数据';
+            refreshButton.innerText = '云鸣潮获取';
         }
     });
+
+    // 鸣潮内获取：从本地游戏日志读取唤取链接（数据算法与云鸣潮获取完全一致）
+    const importFromGameBtn = document.getElementById('import-from-game');
+    if (importFromGameBtn) {
+        importFromGameBtn.addEventListener('click', async () => {
+            const otherBtn = document.getElementById('refresh-data');
+            importFromGameBtn.disabled = true;
+            if (otherBtn) otherBtn.disabled = true;
+            importFromGameBtn.innerText = '请等待...';
+            try {
+                const result = await window.electronAPI.importGachaFromGame();
+                if (result && result.success) {
+                    await reloadGachaData(result.playerId);
+                } else {
+                    console.error(result && result.error);
+                }
+            } catch (error) {
+                console.error('鸣潮内获取发生错误:', error);
+            } finally {
+                importFromGameBtn.disabled = false;
+                if (otherBtn) otherBtn.disabled = false;
+                importFromGameBtn.innerText = '鸣潮内获取';
+            }
+        });
+    }
 
     // 解析主账号（免启动器 / 免 UID），并自动同步奇藏/等级
     await resolveMainAccount();
@@ -890,24 +929,62 @@ function getHiddenPools() {
   return _readHiddenPools();
 }
 
+// 由角色 item 对象生成单个角色卡片 HTML（item: {r, draws, isDeviation}）
+function buildIntuitiveCharCardHtml(it, quality) {
+  const r = it.r;
+  const qClass = quality === 'five' ? 'quality-5' : 'quality-4';
+  return `<div class="intuitive-char-card ${qClass}" data-time="${r.timestamp || ''}">
+    <div class="char-avatar-wrap">
+      ${recordAvatarHtml(r)}
+      ${it.isDeviation ? '<span class="char-deviation-badge">歪</span>' : ''}
+    </div>
+    <span class="intuitive-char-name">${r.name}</span>
+    <span class="intuitive-char-draws">${it.draws}抽</span>
+  </div>`;
+}
+// 由角色 item 对象数组生成角色卡片列表 HTML
+function buildIntuitiveCharListHtml(items, quality) {
+  if (!items || !items.length) {
+    return `<div class="intuitive-empty">暂无${quality === 'five' ? '五星' : '四星'}</div>`;
+  }
+  return items.map(it => buildIntuitiveCharCardHtml(it, quality)).join('');
+}
+
 
 // 刷新/登录后统一重载：账号下拉框 + 记录，与 gachaWuwaInit 保持一致，
 // 避免「账号不显示 / 数据与所选账号对不上」（刷新路径此前漏调 loadPlayerUIDs）
-let _reloading = false;
+//
+// 采用「最新请求获胜」令牌：多账号/双入口（云鸣潮获取 & 鸣潮内获取）并发时，
+// 只有最新一次请求的 UID 会真正落地到下拉框与记录渲染，避免旧账号覆盖新账号
+// （此前 _reloading 布尔守卫会直接丢弃后到的请求，导致留在旧账号页面）。
+let _reloadToken = 0;
 async function reloadGachaData(preferredUid) {
-    if (_reloading) return;
-    _reloading = true;
-    try {
-        // 优先使用刷新/获取时实际拉取的账号 uid（多账号下「最近查询 uid」可能仍是旧账号，
-        // 导致新账号数据不自动展示）；兜底再退回「最近查询 uid」。
-        const uid = preferredUid || await window.electronAPI.getLastQueryUid();
-        await loadPlayerUIDs(uid);   // 重新加载账号下拉框（关键：刷新后必须更新）
-        await loadGachaRecords(uid); // 重载记录
-        applyHiddenPools();
-        syncTreasureBoxes();
-    } finally {
-        _reloading = false;
+    const myToken = ++_reloadToken;
+    // 优先使用刷新/获取时实际拉取的账号 uid（多账号下「最近查询 uid」可能仍是旧账号，
+    // 导致新账号数据不自动展示）；兜底再退回「最近查询 uid」。
+    const uid = preferredUid || await window.electronAPI.getLastQueryUid();
+    // 先切换下拉框到目标 UID，确保「获取到哪个账号就跳到哪个账号」
+    switchDropdownTo(uid);
+    await loadPlayerUIDs(uid);   // 重新加载账号下拉框（关键：刷新后必须更新）
+    if (myToken !== _reloadToken) return; // 已有更新的重载，交给它落地
+    await loadGachaRecords(uid); // 重载记录
+    if (myToken !== _reloadToken) return; // 已有更新的重载，交给它落地
+    applyHiddenPools();
+    syncTreasureBoxes();
+}
+
+// 立刻把 UID 下拉框显示与选中态切到指定 uid（不等 loadPlayerUIDs 异步完成），
+// 保证「鸣潮内获取 a 账号页面 → 拉到 b 数据 → 立即跳到 b」的体验。
+function switchDropdownTo(uid) {
+    if (!uid) return;
+    const selectedDisplay = document.querySelector('.selected-display');
+    if (selectedDisplay) {
+        selectedDisplay.textContent = uid;
+        selectedDisplay.dataset.value = uid;
     }
+    document.querySelectorAll('.dropdown-option').forEach(opt => {
+        opt.classList.toggle('active', opt.dataset.value === String(uid));
+    });
 }
 
 // 暴露初始化函数
@@ -916,9 +993,13 @@ window.gachaWuwaInit = gachaWuwaInit;
 // 刷新/登录获取完成后，主进程广播 gacha-records-updated。
 // 若当前正停留在抽卡分析页则立即重渲染；否则不处理——切回分析页时
 // gachaWuwaInit 会重新 loadGachaRecords 拉取最新数据，避免“切几次页面才出来”。
-window.electronAPI.on('gacha-records-updated', async (evt) => {
+// 注意：preload 的 on 直接桥接 ipcRenderer.on，回调签名为 (event, ...args)，
+// 真正的 payload 是第二个参数，不要误把 event 当 payload（否则 evt.playerId 永远 undefined，
+// 导致广播触发的重载永远走 getLastQueryUid() 兜底回到第一个账号）。
+window.electronAPI.on('gacha-records-updated', async (event, payload) => {
     if (document.getElementById('record-display')) {
-        await reloadGachaData(evt && evt.playerId);
+        const pid = payload && payload.playerId;
+        await reloadGachaData(pid);
     }
 });
 
@@ -971,12 +1052,18 @@ function renderIntuitiveView(records, pools) {
 
     // ===== 全部卡池汇总卡片（置顶，汇总所有卡池的五星角色/武器）=====
     (function buildAllPoolsCard() {
+        // 常驻五星名单（角色出现在所有角色池，武器仅出现在武器常驻池）
+        const STD_FIVE_CHAR_NAMES = ['凌阳', '维里奈', '安可', '卡卡罗', '鉴心'];
+        const STD_FIVE_WEAPON_NAMES = ['漪澜浮录', '擎渊怒涛', '停驻之烟', '千古洑流', '浩境粼光', '源能机锋', '相位涟漪', '脉冲协臂', '玻色星仪', '镭射切变'];
+        const isStdChar = r => STD_FIVE_CHAR_NAMES.some(n => (r.name || '').includes(n));
+        const isStdWeapon = r => STD_FIVE_WEAPON_NAMES.some(n => (r.name || '').includes(n));
         if (hidden.has('__SUMMARY_ALL__')) return; // 隐藏“全部卡池”汇总卡
         let visibleCats = cats.filter(c => !hidden.has(c.key) && (pools[c.key] || []).length);
         // 所有个体卡池都被隐藏时，改为汇总全部卡池，使“卡池汇总”可单独显示
         if (visibleCats.length < 2) visibleCats = cats.filter(c => (pools[c.key] || []).length);
         if (visibleCats.length < 2) return; // 仍不足两个卡池则无需汇总
         let allTotal = 0, allFive = 0, allFour = 0;
+        let allLimitedFive = 0, allStdFive = 0;
         let sumFiveAvg = 0, cntFiveAvg = 0, sumAvgLimited = 0, cntAvgLimited = 0;
         const allFiveItems = [];
         const allTimes = [];
@@ -985,7 +1072,15 @@ function renderIntuitiveView(records, pools) {
             allTotal += recs.length;
             allFive += recs.filter(r => r.quality_level === 5).length;
             allFour += recs.filter(r => r.quality_level === 4).length;
-            const isCharLimited = cat.key.startsWith('角色') && !cat.key.includes('常驻');
+            const isCharLimited = cat.key.startsWith('角色') && !cat.key.includes('常驻') && !cat.key.includes('新手');
+            const isRolePool = cat.key.startsWith('角色') || cat.key.includes('新手');
+            const isWeaponStd = cat.key.startsWith('武器') && cat.key.includes('常驻');
+            allLimitedFive += (isCharLimited ? recs.filter(r => r.quality_level === 5).length : 0);
+            if (isRolePool) {
+                allStdFive += recs.filter(r => r.quality_level === 5 && isStdChar(r)).length;
+            } else if (isWeaponStd) {
+                allStdFive += recs.filter(r => r.quality_level === 5 && isStdWeapon(r)).length;
+            }
             const _total = recs.length;
             const _fa = _total ? calculateDrawsBetween(recs, 5) : null;
             if (typeof _fa === 'number' && !isNaN(_fa)) { sumFiveAvg += _fa; cntFiveAvg++; }
@@ -1000,40 +1095,52 @@ function renderIntuitiveView(records, pools) {
                 allFiveItems.push({ r: r, draws: draws, isDeviation: isDeviation });
             });
         });
-        const avgFive = cntFiveAvg ? String(Math.round(sumFiveAvg / cntFiveAvg)) : '—';
-        const avgLimited = cntAvgLimited ? String(Math.round(sumAvgLimited / cntAvgLimited)) : '—';
+        const avgFive = cntFiveAvg ? String((sumFiveAvg / cntFiveAvg).toFixed(2)) : '—';
+        const avgLimited = cntAvgLimited ? String((sumAvgLimited / cntAvgLimited).toFixed(2)) : '—';
         if (!allTotal) return;
         allFiveItems.sort((a, b) => (b.r.timestamp || '').localeCompare(a.r.timestamp || ''));
-        const fiveItemsHtml = allFiveItems.length ? allFiveItems.map(it => `
-            <div class="intuitive-char-card quality-5" data-time="${it.r.timestamp || ''}">
-                <div class="char-avatar-wrap">
-                    ${recordAvatarHtml(it.r)}
-                    ${it.isDeviation ? '<span class="char-deviation-badge">歪</span>' : ''}
-                </div>
-                <span class="intuitive-char-name">${it.r.name}</span>
-                <span class="intuitive-char-draws">${it.draws}抽</span>
-            </div>`).join('') : '<div class="intuitive-empty">暂无五星</div>';
+        const allFourItems = [];
+        cats.forEach(cat => {
+            const recs = pools[cat.key] || [];
+            recs.filter(r => r.quality_level === 4).forEach(r => {
+                const draws = drawsToNext(recs, r, 4);
+                allFourItems.push({ r: r, draws: draws });
+            });
+        });
+        allFourItems.sort((a, b) => (b.r.timestamp || '').localeCompare(a.r.timestamp || ''));
+        if (!window.__intuitiveCharData) window.__intuitiveCharData = {};
+        window.__intuitiveCharData['__summary__'] = {
+          five: allFiveItems.map(it => buildIntuitiveCharCardHtml(it, 'five')),
+          four: allFourItems.map(it => buildIntuitiveCharCardHtml(it, 'four')),
+          filter: 'five'
+        };
+        const fiveItemsHtml = buildIntuitiveCharListHtml(allFiveItems, 'five');
         let dateRange = '暂无';
         if (allTimes.length) { allTimes.sort(); dateRange = (allTimes[0] || '').split(' ')[0] + ' - ' + (allTimes[allTimes.length - 1] || '').split(' ')[0]; }
         const fiveRate = allTotal ? ((allFive / allTotal * 100).toFixed(2)) : '—';
         const fourRate = allTotal ? ((allFour / allTotal * 100).toFixed(2)) : '—';
         const statDefs = [
-            { label: '卡池数量', value: visibleCats.length, cls: 'st-pity' },
-            { label: '抽卡总数', value: allTotal, cls: 'st-nodev' },
+            { label: '限定五星', value: allLimitedFive, cls: 'st-pity' },
+            { label: '常驻五星', value: allStdFive, cls: 'st-nodev' },
             { label: '平均限定', value: avgLimited, cls: 'st-avglimited' },
             { label: '平均五星', value: avgFive, cls: 'st-avgfive' },
-            { label: '五星总数', value: allFive, cls: 'st-five' },
-            { label: '四星总数', value: allFour, cls: 'st-four' },
+            { label: '五星总数', value: allFive, cls: 'st-five', star: 'five' },
+            { label: '四星总数', value: allFour, cls: 'st-four', star: 'four' },
             { label: '五星出率', value: fiveRate, cls: 'st-avgfive' },
             { label: '四星出率', value: fourRate, cls: 'st-avglimited' }
         ];
-        const miniHtml = statDefs.map(s => `
-              <div class="mini-card ${s.cls}">
+        const miniHtml = statDefs.map(s => {
+            const clickable = s.star ? ` clickable${s.star === 'five' ? ' active' : ''}` : '';
+            const starAttr = s.star ? ` data-star="${s.star}"` : '';
+            return `
+              <div class="mini-card ${s.cls}${clickable}"${starAttr}>
                 <div class="mini-title">${s.label}</div>
                 <div class="mini-value">${fmtMiniValue(s.value)}</div>
-              </div>`).join('');
+              </div>`;
+        }).join('');
         const card = document.createElement('div');
         card.className = 'intuitive-card pool-all';
+        card.dataset.charKey = '__summary__';
         card.innerHTML = `
             <div class="intuitive-card-head">
                 <div class="intuitive-head-left">
@@ -1044,7 +1151,7 @@ function renderIntuitiveView(records, pools) {
             </div>
             <div class="intuitive-card-body">
             <div class="intuitive-mini-grid">${miniHtml}</div>
-            <div class="intuitive-char-list">${fiveItemsHtml}</div>
+            <div class="intuitive-char-list" data-charlist>${fiveItemsHtml}</div>
             </div>
         `;
         grid.appendChild(card);
@@ -1059,7 +1166,7 @@ function renderIntuitiveView(records, pools) {
         const four = recs.filter(r => r.quality_level === 4).length;
         const fiveRate = total ? ((five / total * 100).toFixed(2)) : '—';
         const fourRate = total ? ((four / total * 100).toFixed(2)) : '—';
-        const isCharLimited = cat.key.startsWith('角色') && !cat.key.includes('常驻');
+        const isCharLimited = cat.key.startsWith('角色') && !cat.key.includes('常驻') && !cat.key.includes('新手');
         // 已垫（当前保底进度）：从最新一条往前数到最近一个五星，recs 为倒序（最新在前），与详情视图 calculateLastDraws 一致
         const currentPity = calculateLastDraws(recs, 5);
         // 平均五星
@@ -1105,26 +1212,57 @@ function renderIntuitiveView(records, pools) {
                 <span class="intuitive-char-draws">${currentPity}抽</span>
             </div>`);
         }
+        // 四星列表（含四星当前已垫）
+        const currentPity4 = calculateLastDraws(recs, 4);
+        const fourList = recs.filter(r => r.quality_level === 4);
+        const fourItemsHtmlArr = fourList.map(r => {
+            const draws = drawsToNext(recs, r, 4);
+            return `<div class="intuitive-char-card quality-4" data-time="${r.timestamp || ''}">
+                <div class="char-avatar-wrap">
+                    ${recordAvatarHtml(r)}
+                </div>
+                <span class="intuitive-char-name">${r.name}</span>
+                <span class="intuitive-char-draws">${draws}抽</span>
+            </div>`;
+        });
+        if (currentPity4 > 0) {
+            fourItemsHtmlArr.unshift(`<div class="intuitive-char-card quality-4">
+                <div class="char-avatar-wrap">
+                    ${recordAvatarHtml({ name: '漂泊者·导电', quality_level: 5, resource_id: '' })}
+                    <span class="char-pity-badge">垫</span>
+                </div>
+                <span class="intuitive-char-name">漂泊者</span>
+                <span class="intuitive-char-draws">${currentPity4}抽</span>
+            </div>`);
+        }
+        const charKey = 'pool_' + cat.key;
+        if (!window.__intuitiveCharData) window.__intuitiveCharData = {};
+        window.__intuitiveCharData[charKey] = { five: fiveItemsHtmlArr, four: fourItemsHtmlArr, filter: 'five' };
         const fiveItemsHtml = fiveItemsHtmlArr.length ? fiveItemsHtmlArr.join('') : '<div class="intuitive-empty">暂无五星</div>';
 
         const poolAccentClass = cat.key.startsWith('角色') ? 'pool-char' : 'pool-weapon';
         const statDefs = [
           { key: 'pity', label: '当前已垫', value: currentPity, cls: 'st-pity' },
+          { key: 'nodev', label: '不歪概率', value: noDeviation, cls: 'st-nodev' },
           { key: 'avglimited', label: '平均限定', value: avgLimited, cls: 'st-avglimited' },
           { key: 'avgfive', label: '平均五星', value: fiveAvg, cls: 'st-avgfive' },
-          { key: 'nodev', label: '不歪概率', value: noDeviation, cls: 'st-nodev' },
-          { key: 'five', label: '五星总数', value: five, cls: 'st-five' },
-          { key: 'four', label: '四星总数', value: four, cls: 'st-four' },
+          { key: 'five', label: '五星总数', value: five, cls: 'st-five', star: 'five' },
+          { key: 'four', label: '四星总数', value: four, cls: 'st-four', star: 'four' },
           { key: 'fiverate', label: '五星出率', value: fiveRate, cls: 'st-avgfive' },
           { key: 'fourrate', label: '四星出率', value: fourRate, cls: 'st-avglimited' }
         ];
-        const miniHtml = statDefs.map(s => `
-              <div class="mini-card ${s.cls}">
+        const miniHtml = statDefs.map(s => {
+            const clickable = s.star ? ` clickable${s.star === 'five' ? ' active' : ''}` : '';
+            const starAttr = s.star ? ` data-star="${s.star}"` : '';
+            return `
+              <div class="mini-card ${s.cls}${clickable}"${starAttr}>
                 <div class="mini-title">${s.label}</div>
                 <div class="mini-value">${fmtMiniValue(s.value)}</div>
-              </div>`).join('');
+              </div>`;
+        }).join('');
         const card = document.createElement('div');
         card.className = 'intuitive-card ' + poolAccentClass;
+        card.dataset.charKey = charKey;
         card.innerHTML = `
             <div class="intuitive-card-head">
                 <div class="intuitive-head-left">
@@ -1135,7 +1273,7 @@ function renderIntuitiveView(records, pools) {
             </div>
             <div class="intuitive-card-body">
             <div class="intuitive-mini-grid">${miniHtml}</div>
-            <div class="intuitive-char-list">${fiveItemsHtml}</div>
+            <div class="intuitive-char-list" data-charlist>${fiveItemsHtml}</div>
             </div>
         `;
         grid.appendChild(card);
@@ -1143,6 +1281,25 @@ function renderIntuitiveView(records, pools) {
 
     if (!grid.children.length) view.innerHTML = emptyStateHtml('暂无可视化数据', '切换卡池筛选或刷新数据后再来查看');
     else view.appendChild(grid);
+
+    // 八宫格「五星总数 / 四星总数」点击切换下方角色卡片星级
+    grid.querySelectorAll('.mini-card[data-star]').forEach(mc => {
+      mc.addEventListener('click', () => {
+        const star = mc.dataset.star; // 'five' | 'four'
+        const card = mc.closest('.intuitive-card');
+        if (!card) return;
+        const key = card.dataset.charKey;
+        const data = window.__intuitiveCharData && window.__intuitiveCharData[key];
+        if (!data) return;
+        data.filter = star;
+        const list = card.querySelector('[data-charlist]');
+        if (list) {
+          if (Array.isArray(data[star])) list.innerHTML = data[star].join('');
+          else list.innerHTML = buildIntuitiveCharListHtml(data[star], star);
+        }
+        card.querySelectorAll('.mini-card[data-star]').forEach(x => x.classList.toggle('active', x.dataset.star === star));
+      });
+    });
 }
 
 /* ---------- 表格：全部记录 + 卡池类型筛选 + 分页 ---------- */
@@ -1467,7 +1624,8 @@ async function renderTreasureAccountPicker(containerEl, target) {
     }
     const uidEl = document.querySelector('.selected-display');
     const uid = uidEl ? String(uidEl.textContent).trim() : null;
-    const res = await window.electronAPI.invoke('list-treasure-accounts', uid);
+    // 传 null 让主进程返回国服+国际服全部账号，避免按抽卡 UID 区服过滤漏掉其他区服账号
+    const res = await window.electronAPI.invoke('list-treasure-accounts', { isGlobal: null });
     const accounts = res && res.success && res.accounts ? res.accounts : [];
     if (!accounts.length) { containerEl.style.display = 'none'; return; }
     if (!window.__treasureAccountsCache) window.__treasureAccountsCache = {};
