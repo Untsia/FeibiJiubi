@@ -219,7 +219,7 @@ async function getAccountInfo(oauthCode, isGlobal) {
 function getMainAccount() {
     const all = readLocalOauthCodes();
     if (!all.length) return null;
-    const sorted = all.slice().sort((a, b) => String(a.oauthCode).localeCompare(String(b.oauthCode)));
+    const sorted = sortByOauthCode(all);
     const m = sorted[0];
     return { oauthCode: m.oauthCode, isGlobal: m.isGlobal };
 }
@@ -238,6 +238,11 @@ function buildTreasureResult(basicBoxes, phantomBoxes, level) {
         },
         level: level != null ? level : null,
     };
+}
+
+// 按 oauthCode 字典序稳定排序，避免 readdirSync 返回顺序不确定导致多次同步命中不同账号
+function sortByOauthCode(list) {
+    return list.slice().sort((a, b) => String(a.oauthCode).localeCompare(String(b.oauthCode)));
 }
 
 /**
@@ -262,7 +267,7 @@ async function listTreasureAccounts(playerId, isGlobal) {
         codes = readLocalOauthCodes(); // 无 UID 时返回全部区服账号，供前端选择主账号
     }
     // 按 oauthCode 字典序稳定排序，保证选择框里账号顺序固定
-    const sorted = codes.slice().sort((a, b) => String(a.oauthCode).localeCompare(String(b.oauthCode)));
+    const sorted = sortByOauthCode(codes);
     const accounts = [];
     for (const c of sorted) {
         // 下拉框优先展示游戏内 UID（= queryRole 返回的 base.Id）；
@@ -364,23 +369,11 @@ async function getTreasureBoxes(playerId, oauthCode, isGlobal) {
     if (!region) {
         throw new Error('无法识别玩家服务器（ID=' + playerId + '）');
     }
-    const buildResult = (basicBoxes, phantomBoxes, level) => ({
-        boxes: {
-            '朴素': basicBoxes['1'] != null ? basicBoxes['1'] : 0,
-            '基准': basicBoxes['2'] != null ? basicBoxes['2'] : 0,
-            '精密': basicBoxes['3'] != null ? basicBoxes['3'] : 0,
-            '辉光': basicBoxes['4'] != null ? basicBoxes['4'] : 0,
-            '潮汐绿': phantomBoxes['1'] != null ? phantomBoxes['1'] : 0,
-            '潮汐紫': phantomBoxes['2'] != null ? phantomBoxes['2'] : 0,
-            '潮汐金': phantomBoxes['3'] != null ? phantomBoxes['3'] : 0,
-        },
-        level: level != null ? level : null,
-    });
     // 显式指定了启动器登录态：直接用它拉取，不再遍历猜测（避免多账号命中错乱）
     if (oauthCode) {
         try {
             const r = await queryRole(playerId, oauthCode, region);
-            return buildResult(r.basicBoxes, r.phantomBoxes, r.level);
+            return buildTreasureResult(r.basicBoxes, r.phantomBoxes, r.level);
         } catch (e) {
             throw new Error('所选账号同步失败：' + (e && e.message ? e.message : e));
         }
@@ -401,7 +394,7 @@ async function getTreasureBoxes(playerId, oauthCode, isGlobal) {
     for (const { oauthCode: oc } of codes) {
         try {
             const r = await queryRole(playerId, oc, region);
-            const res = buildResult(r.basicBoxes, r.phantomBoxes, r.level);
+            const res = buildTreasureResult(r.basicBoxes, r.phantomBoxes, r.level);
             // 严格按 UID 锁定：返回账号的 UID 与 playerId 一致，立即采用并缓存
             if (r.uid != null && String(r.uid) === String(playerId)) {
                 _treasureOauthCache[playerId] = oc;

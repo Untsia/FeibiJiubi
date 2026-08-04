@@ -8,7 +8,6 @@
 - **运行时**：Electron v33（主进程）+ 原生渲染进程（无 React/Vue 等框架）
 - **数据存储**：`better-sqlite3`（运行期）+ `sqlite3`（构建期）
 - **图表**：ECharts（`import/echarts.min.js`）、Chart.js（`import/chart.js` 二次封装）
-- **轮播/切换**：Swiper（`import/swiper-bundle.min.js`，用于卡池多图切换）
 - **配置持久化**：`electron-store`（设置页）
 - **自动更新**：`electron-updater`（构建期，GitHub 发布渠道）
 
@@ -26,7 +25,6 @@ FeibiJiubi/
 └── src/
     ├── core/                       # 主进程业务逻辑（不进渲染进程，避免暴露实现）
     │   ├── app/
-    │   │   ├── appIPC.js           # ⚠️ 历史遗留空壳（硬件加速已移除，仅占位，内容为空）
     │   │   ├── console.js          # 日志系统（按日写入日志文件）
     │   │   ├── database.js         # 数据库连接与初始化
     │   │   └── settings/
@@ -67,8 +65,7 @@ FeibiJiubi/
             │   └── syncNotification.js # 同步通知 UI
             └── import/             # 第三方库（本地打包，不进 npm 依赖）
                 ├── echarts.min.js
-                ├── chart.js        # Chart.js 封装
-                └── swiper-bundle.min.js
+                └── chart.js        # Chart.js 封装
 ```
 
 > 已移除的历史模块（本文档不再描述）：`uploadData/`（数据上传）、`settings/hardwareAcceleration.js`、`settings/checkError.js`、`settings/export/exportExcel.js`、`views/modalPages/dataSyncWindow.html`。
@@ -83,8 +80,6 @@ FeibiJiubi/
 ## 四、测试
 
 `tests/` 用 Node 内置 `node --test` 运行（`npm test`）。覆盖：analysisIpc、gachaWuwa、背景、常驻角色、删除 UID、奇藏解码、数据解析。
-
-> ⚠️ `tests/checkError.test.js` 引用的 `src/core/services/settings/checkError.js` 已删除，该测试为**悬空死测试**，运行会报错，建议删除。
 
 ## 五、开源相关
 

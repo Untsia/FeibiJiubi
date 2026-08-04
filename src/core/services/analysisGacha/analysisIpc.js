@@ -69,20 +69,6 @@ ipcMain.handle('get-gacha-records', async (event, playerId) => {
     }
 });
 
-// [DIAG] 返回程序实际连接的抽卡数据库路径与记录数，用于定位“刷新后只剩一种池子”的根因
-ipcMain.handle('get-db-info', async () => {
-    const folderPath = process.env.FEIBIJIUBI_FOLDER_PATH || '(unset)';
-    const dbPath = require('path').join(folderPath, 'gacha_data.db');
-    let count = -1, pools = [];
-    try {
-        const c = (await dbAll('SELECT COUNT(*) AS c FROM gacha_logs'))[0];
-        count = c ? c.c : -1;
-        pools = await dbAll('SELECT card_pool_type, COUNT(*) AS n FROM gacha_logs GROUP BY card_pool_type');
-    } catch (e) { console.error('[DIAG] get-db-info err', e); }
-    console.log('[DIAG-BE] get-db-info folder=', folderPath, 'path=', dbPath, 'count=', count, 'pools=', JSON.stringify(pools));
-    return { folderPath, dbPath, count, pools };
-});
-
 
 /**
  * 刷新唤取记录
@@ -107,14 +93,10 @@ ipcMain.handle('refresh-gacha-records', async (event) => {
         // 仅告知涉及几个卡池、共多少条记录，不逐一列举（诊断明细保留在终端 [GACHA-SUMMARY] 日志）
         const poolCount = (poolSummary || '').split('，').filter(s => !s.endsWith('=0')).length;
         event.sender.send('gacha-records-status', `本次共查询到 ${totalRecords} 条记录，新增 ${newRecords} 条记录，涉及 ${poolCount} 个卡池。抽卡链接已复制到剪贴板`);
-        if (totalRecords === 0){
-            global.Notify(false, `链接可能已经过期，请尝试重新打开抽卡界面`);
-            event.sender.send('gacha-records-updated', { success: false, totalRecords, newRecords, playerId: params.playerId });
-            return { success: false, totalRecords, newRecords, playerId: params.playerId };
-        }else {
-            event.sender.send('gacha-records-updated', { success: true, totalRecords, newRecords, playerId: params.playerId });
-            return { success: true, totalRecords, newRecords, playerId: params.playerId };
-        }
+        const refreshSuccess = totalRecords !== 0;
+        if (!refreshSuccess) global.Notify(false, `链接可能已经过期，请尝试重新打开抽卡界面`);
+        event.sender.send('gacha-records-updated', { success: refreshSuccess, totalRecords, newRecords, playerId: params.playerId });
+        return { success: refreshSuccess, totalRecords, newRecords, playerId: params.playerId };
     } catch (err) {
         const errorMessage = (err instanceof Error) ? err.message : String(err);
         console.error("获取记录失败:", errorMessage);
@@ -161,14 +143,10 @@ ipcMain.handle('import-gacha-from-game', async (event) => {
         const poolCount = (poolSummary || '').split('，').filter(s => !s.endsWith('=0')).length;
         event.sender.send('gacha-records-status', `本次共查询到 ${totalRecords} 条记录，新增 ${newRecords} 条记录，涉及 ${poolCount} 个卡池。抽卡链接已复制到剪贴板`);
 
-        if (totalRecords === 0) {
-            global.Notify(false, '链接可能已经过期，请在游戏内重新打开一次唤取记录');
-            event.sender.send('gacha-records-updated', { success: false, totalRecords, newRecords, playerId: params.playerId });
-            return { success: false, totalRecords, newRecords, playerId: params.playerId };
-        }
-
-        event.sender.send('gacha-records-updated', { success: true, totalRecords, newRecords, playerId: params.playerId });
-        return { success: true, totalRecords, newRecords, playerId: params.playerId };
+        const importSuccess = totalRecords !== 0;
+        if (!importSuccess) global.Notify(false, '链接可能已经过期，请在游戏内重新打开一次唤取记录');
+        event.sender.send('gacha-records-updated', { success: importSuccess, totalRecords, newRecords, playerId: params.playerId });
+        return { success: importSuccess, totalRecords, newRecords, playerId: params.playerId };
     } catch (err) {
         const errorMessage = (err instanceof Error) ? err.message : String(err);
         console.error('鸣潮内获取失败:', errorMessage);

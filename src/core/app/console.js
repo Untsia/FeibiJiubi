@@ -96,34 +96,15 @@ function emit(line) {
     logStream.write(enc(line, FILE_ENC)); // 日志文件按系统代码页写出
     checkLogFileSize();
 }
-console.log = function (...args) {
-    const timestamp = getTimestamp();  // 获取 UTC+8 时间戳
-    const message = args.join(' ');  // 合并所有参数为一个字符串
-    const line = `[${timestamp}] LOG: ${message}\n`;
-    emit(line);
-    process.stdout.write(enc(line, CONSOLE_ENC)); // 在控制台显示（按需转码）
-};
-
-console.error = function (...args) {
-    const timestamp = getTimestamp();
-    const message = args.join(' ');
-    const line = `[${timestamp}] ERROR: ${message}\n`;
-    emit(line);
-    process.stderr.write(enc(line, CONSOLE_ENC));
-};
-
-console.warn = function (...args) {
-    const timestamp = getTimestamp();
-    const message = args.join(' ');
-    const line = `[${timestamp}] WARN: ${message}\n`;
-    emit(line);
-    process.stderr.write(enc(line, CONSOLE_ENC));
-};
-
-console.info = function (...args) {
-    const timestamp = getTimestamp();
-    const message = args.join(' ');  // 合并所有参数为一个字符串
-    const line = `[${timestamp}] INFO: ${message}\n`;
-    emit(line);
-    process.stdout.write(enc(line, CONSOLE_ENC));
-};
+// 工厂：统一生成 console 方法，仅 [LEVEL] 标签与输出流不同
+function makeConsoleMethod(level, stream) {
+    return function (...args) {
+        const line = `[${getTimestamp()}] ${level}: ${args.join(' ')}\n`;
+        emit(line);
+        stream.write(enc(line, CONSOLE_ENC)); // 在控制台显示（按需转码）
+    };
+}
+console.log = makeConsoleMethod('LOG', process.stdout);
+console.error = makeConsoleMethod('ERROR', process.stderr);
+console.warn = makeConsoleMethod('WARN', process.stderr);
+console.info = makeConsoleMethod('INFO', process.stdout);

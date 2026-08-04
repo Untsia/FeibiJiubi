@@ -1,10 +1,5 @@
 const { contextBridge, ipcRenderer } = require('electron');
 let appPath = ''; // 初始化应用路径
-let dbPath = ''; // 初始化 dbPath
-ipcRenderer.on('set-db-path', (_, path) => {
-    dbPath = path;
-});
-
 
 ipcRenderer.on('set-app-path', (_, path) => {
     appPath = path;

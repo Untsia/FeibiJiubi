@@ -1,15 +1,14 @@
 // 强制重绘所有 backdrop-filter 元素，修复禁用硬件加速（software rendering）下
 // 局部 innerHTML 重建后模糊层错位/半透明堆叠的视觉扭曲。
-// [DIAG] 全局错误/拒绝捕获，定位刷新后数据不渲染根因
 (function () {
   if (window.__diagGlobalBound) return;
   window.__diagGlobalBound = true;
-  window.addEventListener('error', function (e) {
-    console.log('[DIAG-ERR] error:', e.message, '\n', (e.error && e.error.stack) || '');
+  window.addEventListener('error', (e) => {
+    console.error('Unhandled error:', e.message, '\n', (e.error && e.error.stack) || '');
   });
-  window.addEventListener('unhandledrejection', function (e) {
-    var r = e.reason;
-    console.log('[DIAG-ERR] unhandledrejection:', (r && (r.stack || r.message)) || r);
+  window.addEventListener('unhandledrejection', (e) => {
+    const r = e.reason;
+    console.error('Unhandled rejection:', (r && (r.stack || r.message)) || r);
   });
 })();
 
@@ -581,7 +580,7 @@ async function loadGachaRecords(uid) {
             positionPop(pop, th);
         }
         function syncStarOptions() {
-            starPop.querySelectorAll('.dfp-option[data-star]').forEach(function (b) {
+            starPop.querySelectorAll('.dfp-option[data-star]').forEach((b) => {
                 const v = parseInt(b.dataset.star, 10);
                 b.classList.toggle('active', starFilter.has(v));
             });
@@ -609,7 +608,7 @@ async function loadGachaRecords(uid) {
             if (timePop.classList.contains('open')) { closePops(); return; }
             openPop(timePop, timeTh);
         });
-        starPop.querySelector('#star-option-list').addEventListener('click', function (e) {
+        starPop.querySelector('#star-option-list').addEventListener('click', (e) => {
             const btn = e.target.closest('.dfp-option');
             if (!btn) return;
             e.stopPropagation();
@@ -621,18 +620,18 @@ async function loadGachaRecords(uid) {
             currentPage = 1;
             renderRows();
         });
-        starPop.querySelector('#star-clear').addEventListener('click', function (e) {
+        starPop.querySelector('#star-clear').addEventListener('click', (e) => {
             e.stopPropagation();
             starFilter.clear();
             syncStarOptions();
             currentPage = 1;
             renderRows();
         });
-        starPop.querySelector('#star-confirm').addEventListener('click', function (e) {
+        starPop.querySelector('#star-confirm').addEventListener('click', (e) => {
             e.stopPropagation();
             closePops();
         });
-        timePop.querySelector('#time-date-list').addEventListener('click', function (e) {
+        timePop.querySelector('#time-date-list').addEventListener('click', (e) => {
             const btn = e.target.closest('.dfp-option');
             if (!btn) return;
             e.stopPropagation();
@@ -644,7 +643,7 @@ async function loadGachaRecords(uid) {
             currentPage = 1;
             renderRows();
         });
-        timePop.querySelector('#time-clear').addEventListener('click', function (e) {
+        timePop.querySelector('#time-clear').addEventListener('click', (e) => {
             e.stopPropagation();
             timeFilter.clear();
             timeTh.classList.remove('filtered');
@@ -652,13 +651,13 @@ async function loadGachaRecords(uid) {
             currentPage = 1;
             renderRows();
         });
-        timePop.querySelector('#time-confirm').addEventListener('click', function (e) {
+        timePop.querySelector('#time-confirm').addEventListener('click', (e) => {
             e.stopPropagation();
             closePops();
         });
 
-        [starPop, timePop].forEach(function (p) { p.addEventListener('click', function (e) { e.stopPropagation(); }); });
-        const onDetailDocClick = function () { closePops(); };
+        [starPop, timePop].forEach((p) => { p.addEventListener('click', (e) => { e.stopPropagation(); }); });
+        const onDetailDocClick = () => { closePops(); };
         if (window.__detailDocClick) document.removeEventListener('click', window.__detailDocClick);
         window.__detailDocClick = onDetailDocClick;
         document.addEventListener('click', onDetailDocClick);
@@ -810,11 +809,6 @@ async function gachaWuwaInit() {
     await resolveMainAccount();
     bindAccountCard();
     syncTreasureBoxes();
-}
-
-// 如果 charts 已存在，则不会重新定义
-if (typeof charts === "undefined") {
-    var charts = {};
 }
 
 window.electronAPI.on('gacha-records-status', (event, status) => {
@@ -1652,7 +1646,7 @@ async function renderTreasureAccountPicker(containerEl, target) {
       window.__treasureAccountChoice[target] = String(idx);
     }
 
-    list.innerHTML = accounts.map(function (a, i) {
+    list.innerHTML = accounts.map((a, i) => {
       return '<li class="dropdown-option" data-idx="' + i + '">' + accountName(a) + '</li>';
     }).join('');
 
@@ -1676,7 +1670,7 @@ async function renderTreasureAccountPicker(containerEl, target) {
       e.stopPropagation();
       if (list.classList.contains('show')) closeMenu(); else openMenu();
     };
-    list.querySelectorAll('.dropdown-option').forEach(function (it) {
+    list.querySelectorAll('.dropdown-option').forEach((it) => {
       it.onclick = (e) => {
         e.stopPropagation();
         setActive(parseInt(it.dataset.idx, 10));

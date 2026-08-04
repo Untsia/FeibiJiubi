@@ -58,6 +58,23 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * @param event
  * @returns {Promise<object[]>} 唤取记录数组
  */
+// 致命鉴权错误（链接过期 / authkey 失效 / 参数非法）：这类错误对所有卡池都必然同样失败，
+// 继续遍历剩余卡池只会浪费时间（每个卡池 sleep 350ms），应在首次捕获时立即中止并返回最终结果。
+function isFatalAuthError(err) {
+    const status = err.response && err.response.status;
+    // 4xx（除 429 限流外）一律视为致命鉴权/参数错误
+    if (typeof status === 'number' && status >= 400 && status < 500 && status !== 429) return true;
+    // 业务码非 0 且非限流类：authkey 失效 / 链接过期 / 签名错误
+    const apiCode = err.apiCode;
+    if (apiCode !== undefined && apiCode !== 0 && apiCode !== '0') {
+        // -110 / -120 等常见为 authkey 过期；一律按致命处理（重试无意义）
+        return true;
+    }
+    const msg = (err.message || '').toLowerCase();
+    if (msg.includes('authkey') || msg.includes('expired') || msg.includes('失效') || msg.includes('过期')) return true;
+    return false;
+}
+
 async function fetchAllGachaLogs(params, event) {
     const allLogs = [];
     let totalNewRecords = 0; // 新增记录计数
@@ -86,6 +103,13 @@ async function fetchAllGachaLogs(params, event) {
         } catch (err) {
             console.warn(`请求卡池类型 ${typeName} 时出错: ${err.message}`);
             sendStatusToRenderer(event, `卡池「${typeName}」获取失败: ${err.message}`);
+            // 致命鉴权错误（链接过期 / authkey 失效）：对所有卡池都会同样失败，
+            // 首次命中立即中止遍历，让上层直接返回失败结果，避免无意义地遍历全部卡池。
+            if (isFatalAuthError(err)) {
+                console.error(`卡池「${typeName}」出现致命鉴权错误，中止后续卡池遍历: ${err.message}`);
+                sendStatusToRenderer(event, `链接可能已过期或失效，已中止请求`);
+                throw err;
+            }
             // 可重试条件：502 / 429 限流 / 5xx 服务错误 / 网络或超时错误（无 response）
             const status = err.response && err.response.status;
             const retryable = status === 502 || status === 429 || (typeof status === 'number' && status >= 500) || !err.response;
@@ -104,6 +128,8 @@ async function fetchAllGachaLogs(params, event) {
                 } catch (retryErr) {
                     console.error(`重试卡池类型 ${typeName} 时依然失败: ${retryErr.message}`);
                     sendStatusToRenderer(event, `卡池「${typeName}」重试仍失败: ${retryErr.message}`);
+                    // 重试失败若已是致命鉴权错误，同样中止遍历
+                    if (isFatalAuthError(retryErr)) throw retryErr;
                 }
             }
         }
@@ -132,13 +158,19 @@ async function fetchGachaLogsByType(params, event) {
         const safeLog = { ...params, authkey: '***' };
         console.log(`[GACHA-REQ] 卡池类型 ${params.cardPoolType} 请求参数:`, JSON.stringify(safeLog));
         const response = await gachaAxios.post(BASE_URL, params);
-        if (response.status !== 200) throw new Error(`HTTP 状态码: ${response.status}`);
+        if (response.status !== 200) {
+            const httpErr = new Error(`HTTP 状态码: ${response.status}`);
+            httpErr.response = { status: response.status }; // 供上层判定致命鉴权错误
+            throw httpErr;
+        }
         const rd = response.data || {};
         const apiCode = rd.code;
         const dataList = Array.isArray(rd.data) ? rd.data : [];
         // API 业务码非 0（如限流/鉴权失效/参数错误）时抛出异常，交由上层重试或记录失败
         if (apiCode !== undefined && apiCode !== 0 && apiCode !== '0') {
-            throw new Error(`API business code=${apiCode} message=${rd.message || '(无 message)'}`);
+            const bizErr = new Error(`API business code=${apiCode} message=${rd.message || '(无 message)'}`);
+            bizErr.apiCode = apiCode; // 供上层判定致命鉴权错误时精确匹配业务码
+            throw bizErr;
         }
         console.log(`[GACHA-RES] 卡池类型 ${params.cardPoolType}: http=${response.status} code=${apiCode} message=${rd.message} records=${dataList.length}`);
         sendStatusToRenderer(event, `卡池类型 ${params.cardPoolType} 获取到 ${dataList.length} 条记录`);

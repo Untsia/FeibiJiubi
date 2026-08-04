@@ -340,6 +340,7 @@
 .cpp-btn {
   flex: 1; height: 36px; border-radius: var(--radius-sm); border: 1px solid var(--border);
   font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s ease;
+  display: flex; align-items: center; justify-content: center;
 }
 .cpp-cancel { background: transparent; color: var(--text-secondary); }
 .cpp-cancel:hover { background: var(--accent-soft); color: var(--text-primary); }
@@ -422,19 +423,18 @@
 .settings-page .update-link {
   display: inline-flex;
   align-items: center;
-  padding: 9px 16px;
-  border-radius: var(--radius-pill);
-  background: var(--gradient-primary);
-  color: #fff;
+  font-family: var(--font);
   font-size: 13px;
   font-weight: 600;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
   text-decoration: none;
-  box-shadow: 0 6px 18px var(--accent-glow);
-  transition: transform 0.18s var(--ease-spring), box-shadow 0.2s ease, opacity 0.2s ease;
+  box-shadow: none;
+  transition: transform 0.12s ease, background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
-.settings-page .update-link:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 26px var(--accent-glow);
-}
-.settings-page .update-link:active { transform: scale(0.97); }
+.settings-page .update-link:hover { background: var(--accent-soft); }
+.settings-page .update-link:active { transform: scale(0.96); }
 .settings-page .hidden { display: none !important; }

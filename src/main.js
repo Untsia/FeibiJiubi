@@ -34,7 +34,6 @@ const gotTheLock = app.requestSingleInstanceLock();
 
 let tray = null;
 let mainWindow;
-global.mainWindow = mainWindow; // 将 mainWindow 保存在全局对象中
 let closeActionSetting = 'exit';
 
 
@@ -55,11 +54,9 @@ function createTray() {
             createWindow();  // 如果主窗口未创建，则创建窗口
         } else {
             if (mainWindow.isVisible()) {
-                // mainWindow.hide();
                 mainWindow.destroy();  // 销毁窗口并释放资源
                 mainWindow = null; // 清除引用
                 global.mainWindow = null;  // 清除全局引用
-                // isWindowVisible = false;
             } else {
                 mainWindow.show();
                 mainWindow.focus();
@@ -130,12 +127,6 @@ function createWindow() {
     mainWindow.webContents.on('did-finish-load', () => {
         mainWindow.webContents.send('set-app-path', app.getAppPath());
     });
-    // mainWindow.on('minimize', () => {
-    //     isWindowVisible = false;
-    // });
-    // mainWindow.on('restore', () => {
-    //     isWindowVisible = true;
-    // });
     mainWindow.on('close', (event) => {
         if (closeActionSetting === 'tray') {
             event.preventDefault();
@@ -212,7 +203,6 @@ require('./core/services/analysisGacha/analysisIpc'); // 引入分析相关的 I
 // 设置页面
 const { loadBackground } = require('./core/services/settings/background');
 // 页面功能
-require('./core/app/appIPC');
 app.whenReady().then(() => {
     initializeDatabase();
     initializeSettings();
