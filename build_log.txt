@@ -1,0 +1,99 @@
+
+> feibijiubi@1.9.0 prebuild
+> node scripts/clean-dist.js
+
+[clean-dist] dist 目录不存在，跳过
+
+> feibijiubi@1.9.0 build
+> electron-builder
+
+  • electron-builder  version=25.1.8 os=10.0.26200
+  • loaded configuration  file=package.json ("build" field)
+  • executing @electron/rebuild  electronVersion=33.4.11 arch=x64 buildFromSource=false appDir=./
+  • installing native dependencies  arch=x64
+  • preparing       moduleName=better-sqlite3 arch=x64
+  • finished        moduleName=better-sqlite3 arch=x64
+  • preparing       moduleName=sqlite3 arch=x64
+  • finished        moduleName=sqlite3 arch=x64
+  • completed installing native dependencies
+  • packaging       platform=win32 arch=x64 electron=33.4.11 appOutDir=dist_build\win-unpacked
+  • updating asar integrity executable resource  executablePath=dist_build\win-unpacked\菲比啾比.exe
+  • signing with signtool.exe  path=dist_build\win-unpacked\菲比啾比.exe
+  • no signing info identified, signing is skipped  signHook=false cscInfo=null
+  • building        target=portable file=dist_build\FeibiJiubi-1.9.0-windows-x64-portable.exe archs=x64
+  • signing with signtool.exe  path=dist_build\win-unpacked\resources\elevate.exe
+  • no signing info identified, signing is skipped  signHook=false cscInfo=null
+  ⨯ Exit code: 1. Command failed: E:\test\FeibiJiubi-PC\node_modules\7zip-bin\win\x64\7za.exe a -bd -mx=9 -mtc=off -mtm=off -mta=off E:\test\FeibiJiubi-PC\dist_build\feibijiubi-1.9.0-x64.nsis.7z .
+
+WARNING: ϵͳ�Ҳ���ָ�����ļ���
+.\resources\elevate.exe
+
+
+WARNING: ϵͳ�Ҳ���ָ�����ļ���
+.\�Ʊ�౱�.exe
+
+
+
+7-Zip (a) 21.07 (x64) : Copyright (c) 1999-2021 Igor Pavlov : 2021-12-26
+
+Scanning the drive:
+21 folders, 139 files, 402265948 bytes (384 MiB)
+
+Creating archive: E:\test\FeibiJiubi-PC\dist_build\feibijiubi-1.9.0-x64.nsis.7z
+
+Add new data to archive: 21 folders, 139 files, 402265948 bytes (384 MiB)
+
+
+Files read from disk: 137
+Archive size: 48661079 bytes (47 MiB)
+
+WARNINGS for files:
+
+.\resources\elevate.exe : ϵͳ�Ҳ���ָ�����ļ���
+.\�Ʊ�౱�.exe : ϵͳ�Ҳ���ָ�����ļ���
+----------------
+WARNING: Cannot open 2 files
+
+
+WARNING: ϵͳ�Ҳ���ָ�����ļ���
+.\resources\elevate.exe
+
+
+WARNING: ϵͳ�Ҳ���ָ�����ļ���
+.\�Ʊ�౱�.exe
+
+  failedTask=build stackTrace=Error: Exit code: 1. Command failed: E:\test\FeibiJiubi-PC\node_modules\7zip-bin\win\x64\7za.exe a -bd -mx=9 -mtc=off -mtm=off -mta=off E:\test\FeibiJiubi-PC\dist_build\feibijiubi-1.9.0-x64.nsis.7z .
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         WARNING: ϵͳ�Ҳ���ָ�����ļ���
+.\resources\elevate.exe
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         WARNING: ϵͳ�Ҳ���ָ�����ļ���
+.\�Ʊ�౱�.exe
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         7-Zip (a) 21.07 (x64) : Copyright (c) 1999-2021 Igor Pavlov : 2021-12-26
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         Scanning the drive:
+21 folders, 139 files, 402265948 bytes (384 MiB)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         Creating archive: E:\test\FeibiJiubi-PC\dist_build\feibijiubi-1.9.0-x64.nsis.7z
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         Add new data to archive: 21 folders, 139 files, 402265948 bytes (384 MiB)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         Files read from disk: 137
+Archive size: 48661079 bytes (47 MiB)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         WARNINGS for files:
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         .\resources\elevate.exe : ϵͳ�Ҳ���ָ�����ļ���
+.\�Ʊ�౱�.exe : ϵͳ�Ҳ���ָ�����ļ���
+----------------
+WARNING: Cannot open 2 files
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         WARNING: ϵͳ�Ҳ���ָ�����ļ���
+.\resources\elevate.exe
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         WARNING: ϵͳ�Ҳ���ָ�����ļ���
+.\�Ʊ�౱�.exe
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             at E:\test\FeibiJiubi-PC\node_modules\builder-util\src\util.ts:138:18
+    at ChildProcess.exithandler (node:child_process:424:5)
+    at ChildProcess.emit (node:events:509:28)
+    at maybeClose (node:internal/child_process:1124:16)
+    at Process.ChildProcess._handle.onexit (node:internal/child_process:306:5)
+From previous event:
+    at processImmediate (node:internal/timers:504:21)
+From previous event:
+    at NsisTarget.buildInstaller (E:\test\FeibiJiubi-PC\node_modules\app-builder-lib\src\targets\nsis\NsisTarget.ts:237:29)
+    at NsisTarget.finishBuild (E:\test\FeibiJiubi-PC\node_modules\app-builder-lib\src\targets\nsis\NsisTarget.ts:138:9)
+    at Packager.doBuild (E:\test\FeibiJiubi-PC\node_modules\app-builder-lib\src\packager.ts:478:7)
+    at executeFinally (E:\test\FeibiJiubi-PC\node_modules\builder-util\src\promise.ts:12:14)
+    at Packager.build (E:\test\FeibiJiubi-PC\node_modules\app-builder-lib\src\packager.ts:393:31)
+    at executeFinally (E:\test\FeibiJiubi-PC\node_modules\builder-util\src\promise.ts:12:14)

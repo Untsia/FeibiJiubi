@@ -32,9 +32,17 @@ test('getRegion 按 UID 首位识别国服/国际服', () => {
   assert.equal(getRegion(null), null);
 });
 
-// ---------- 场景 4：getTreasureBoxes 缺少 playerId 抛错 ----------
-test('getTreasureBoxes 无 playerId 抛错', async () => {
-  await assert.rejects(() => getTreasureBoxes(''), /未提供玩家 ID/);
+// ---------- 场景 4：getTreasureBoxes 无 playerId 且无本地登录缓存抛错 ----------
+test('getTreasureBoxes 无 playerId 且无本地登录缓存抛错', async () => {
+  // 隔离 APPDATA，确保无本地启动器缓存，验证回退逻辑的报错文案
+  const prev = process.env.APPDATA;
+  process.env.APPDATA = path.join(os.tmpdir(), 'feibijiubi-no-cache-' + Date.now());
+  try {
+    await assert.rejects(() => getTreasureBoxes(''), /登录缓存/);
+  } finally {
+    if (prev === undefined) delete process.env.APPDATA;
+    else process.env.APPDATA = prev;
+  }
 });
 
 // ---------- 场景 5：getTreasureBoxes 无法识别区服抛错 ----------

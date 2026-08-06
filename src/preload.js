@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     on: (channel, listener) => {ipcRenderer.on(channel, listener);},
     send: (channel, data) => {ipcRenderer.send(channel, data);},
     openExternal: (url) => ipcRenderer.send('open-external', url),
+    getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+    checkUpdate: () => ipcRenderer.invoke('check-update'),
     refreshGachaRecords: (manualUrl) => ipcRenderer.invoke('refresh-gacha-records', manualUrl),
     importGachaFromGame: () => ipcRenderer.invoke('import-gacha-from-game'),
     getGachaRecords: (playerId) => ipcRenderer.invoke('get-gacha-records', playerId),
@@ -31,8 +33,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     selectBackgroundFile: () => ipcRenderer.invoke('selectBackgroundFile'),
 
     getGachaAvatars: (items) => ipcRenderer.invoke('get-gacha-avatars', items),
-    openGachaAvatarFolder: () => ipcRenderer.invoke('open-gacha-avatar-folder'),
     browseGamePath: () => ipcRenderer.invoke('browse-game-path'),
+    detectWutheringWavesPath: () => ipcRenderer.invoke('detect-wuthering-waves-path'),
     filePathToURL,
     invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
 });

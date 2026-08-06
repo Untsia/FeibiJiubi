@@ -425,13 +425,14 @@
   align-items: center;
   font-family: var(--font);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
   padding: 10px 18px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--accent);
   background: transparent;
   color: var(--accent);
   text-decoration: none;
+  cursor: pointer;
   box-shadow: none;
   transition: transform 0.12s ease, background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }

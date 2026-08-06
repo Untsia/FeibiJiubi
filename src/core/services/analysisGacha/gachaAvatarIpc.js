@@ -1,4 +1,4 @@
-const { ipcMain, shell, app } = require('electron');
+const { ipcMain, app } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
@@ -76,15 +76,4 @@ ipcMain.handle('get-gacha-avatars', async (event, items) => {
         });
     }
     return { byResourceId, byName };
-});
-
-// 打开头像文件夹（首次写入命名说明）
-ipcMain.handle('open-gacha-avatar-folder', async () => {
-    const dir = getAvatarDir();
-    try {
-        await shell.openPath(dir);
-        return { success: true };
-    } catch (e) {
-        return { success: false, error: e.message };
-    }
 });

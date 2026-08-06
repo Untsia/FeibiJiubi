@@ -326,43 +326,52 @@ function renderPieChart(records, poolType) {
     // 插入到饼状图下方
     canvas.insertAdjacentHTML('afterend', starInfoHtml);
 
-    // 初始化图表并存储实例
-    charts[poolType] = new Chart(ctx, {
-        type: "doughnut", // 使用 doughnut 类型
-        data: chartData,
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: false, // 隐藏默认标签
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            const value = context.raw || 0;
-                            return `${value} 抽`;
+    // 初始化图表并存储实例。延迟到浏览器空闲时执行（requestIdleCallback），
+    // 避免分析页首屏同步创建多个 Chart 实例阻塞主线程导致卡顿；
+    // 不支持 rIC 的环境回退到 setTimeout 0。
+    const initChart = () => {
+        charts[poolType] = new Chart(ctx, {
+            type: "doughnut", // 使用 doughnut 类型
+            data: chartData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false, // 隐藏默认标签
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const value = context.raw || 0;
+                                return `${value} 抽`;
+                            },
                         },
                     },
                 },
+                animation: {
+                    duration: 1000,
+                    animateScale: true,
+                    animateRotate: true,
+                },
             },
-            animation: {
-                duration: 1000,
-                animateScale: true,
-                animateRotate: true,
-            },
-        },
-    });
-
-    // 为每个数字绑定点击事件
-    const starElements = canvas.nextElementSibling.querySelectorAll('.star-info span');
-    starElements.forEach((element) => {
-        element.addEventListener('click', function () {
-            const index = this.dataset.index; // 获取对应数据索引
-            const meta = charts[poolType].getDatasetMeta(0); // 获取当前卡池图表的元数据
-            meta.data[index].hidden = !meta.data[index].hidden; // 切换数据可见性
-            charts[poolType].update(); // 更新当前图表
         });
-    });
+
+        // 为每个数字绑定点击事件（依赖 charts[poolType] 实例，故置于 idle 回调内）
+        const starElements = canvas.nextElementSibling.querySelectorAll('.star-info span');
+        starElements.forEach((element) => {
+            element.addEventListener('click', function () {
+                const index = this.dataset.index; // 获取对应数据索引
+                const meta = charts[poolType].getDatasetMeta(0); // 获取当前卡池图表的元数据
+                meta.data[index].hidden = !meta.data[index].hidden; // 切换数据可见性
+                charts[poolType].update(); // 更新当前图表
+            });
+        });
+    };
+    if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(initChart, { timeout: 500 });
+    } else {
+        setTimeout(initChart, 0);
+    }
 }
 
 
@@ -405,26 +414,28 @@ function initRecordTooltips() {
         tooltip.className = 'record-tooltip';
         document.body.appendChild(tooltip);
     }
-    // 事件委托：详情页数据条(.record) 与 统计页角色卡片(.intuitive-char-card) 统一显示获取时间
+    // 事件委托：详情页数据条(.record)、卡片视图头像(.char-avatar-wrap)、列表视图头像(.bar-avatar-wrap) 统一显示获取时间
     if (window.__recordTooltipBound) return;
     window.__recordTooltipBound = true;
     document.addEventListener('mouseover', e => {
-        const el = e.target.closest('.record, .intuitive-char-card');
+        const el = e.target.closest('.record, .char-avatar-wrap, .bar-avatar-wrap');
         if (!el) return;
-        const time = el.dataset.time;
+        // 头像元素(.char-avatar-wrap/.bar-avatar-wrap)自身无 data-time，向上找最近带 data-time 的父级（角色卡/列表行/记录条）
+        const timeEl = el.dataset.time ? el : el.closest('[data-time]');
+        const time = timeEl ? timeEl.dataset.time : '';
         if (!time) { tooltip.style.opacity = '0'; return; }
         tooltip.innerHTML = '<div class="tooltip-body"><p><strong>获取时间：</strong>' + time + '</p></div>';
         tooltip.style.opacity = '1';
     });
     document.addEventListener('mousemove', e => {
-        const el = e.target.closest('.record, .intuitive-char-card');
+        const el = e.target.closest('.record, .char-avatar-wrap, .bar-avatar-wrap');
         if (!el) return;
         const offset = 14;
         tooltip.style.left = (e.pageX + offset) + 'px';
         tooltip.style.top = (e.pageY + offset) + 'px';
     });
     document.addEventListener('mouseout', e => {
-        const el = e.target.closest('.record, .intuitive-char-card');
+        const el = e.target.closest('.record, .char-avatar-wrap, .bar-avatar-wrap');
         if (el && !el.contains(e.relatedTarget)) {
             tooltip.style.opacity = '0';
         }

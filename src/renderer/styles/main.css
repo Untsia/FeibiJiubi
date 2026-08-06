@@ -330,7 +330,7 @@ body {
   color: inherit;
 }
 .sb-btn .nav-ico svg { width: 22px; height: 22px; display: block; color: currentColor; }
-.sb-btn:hover { color: var(--text-primary); filter: none; box-shadow: none; }
+.sb-btn:hover { color: var(--accent); filter: none; box-shadow: none; }
 .sb-btn:active { transform: none; }
 .sb-btn.sidebar-settings.active { color: var(--accent); filter: none; box-shadow: none; }
 
@@ -428,6 +428,11 @@ body.theme-light .sb-btn.theme-toggle .nav-ico .ico-moon { display: block; }
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); background-clip: padding-box; }
 ::-webkit-scrollbar-track { background: transparent; }
+/* Firefox 一致性：标准属性，避免不同浏览器滚动条风格割裂 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
 
 /* ----------------------- 统一按钮系统 ----------------------- */
 button {
@@ -552,6 +557,100 @@ input::placeholder { color: var(--text-muted); }
   justify-content: flex-end;
   gap: var(--space-2);
   box-sizing: border-box;
+}
+
+/* ----------------------- 更新弹窗专用样式 ----------------------- */
+.update-modal-card { width: 420px; }
+.update-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.update-modal-icon { font-size: 1.1em; }
+.update-modal-body { text-align: center; }
+.update-version-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.update-badge {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.update-badge-new {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+}
+.update-arrow { color: var(--text-muted); font-size: 14px; }
+.update-modal-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+.update-modal-footer { justify-content: center; gap: 12px; }
+.modal-button {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.12s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 110px;
+}
+.modal-button:active { transform: scale(0.97); }
+.modal-button-ghost {
+  background: var(--surface);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+.modal-button-ghost:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.modal-button-primary {
+  background: var(--gradient-primary);
+  color: var(--accent-contrast);
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+.modal-button-primary:hover { filter: brightness(1.05); box-shadow: 0 6px 18px var(--accent-glow); }
+.modal-button-primary:disabled { opacity: 0.7; cursor: default; filter: none; box-shadow: none; }
+
+/* 下载进度条 */
+.update-progress { margin-top: 18px; }
+.update-progress-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.update-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: var(--radius-pill);
+  background: var(--gradient-primary);
+  transition: width 0.3s ease;
+}
+.update-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 /* 图片预览框 */

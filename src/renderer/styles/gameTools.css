@@ -23,8 +23,8 @@ body { overflow: hidden; }
 }
 
 /* 页面头部标题区 */
-.page-head { margin-bottom: 2px; }
-.page-title { margin: 0; font-size: 22px; font-weight: 700; color: var(--text-strong); letter-spacing: 0.3px; }
+.page-head { margin: 0 0 2px; }
+.page-title { font-size: 22px; font-weight: 700; color: var(--text-strong); letter-spacing: 0.3px; }
 .page-sub { margin: 5px 0 0; font-size: 13px; color: var(--text-secondary); }
 
 /* 顶部输入框与按钮 */
@@ -42,7 +42,7 @@ body { overflow: hidden; }
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 /* 右侧操作按钮组 */
@@ -78,6 +78,7 @@ body { overflow: hidden; }
   padding: 9px 16px;
   flex: 1 1 0;
   min-width: 0;
+  white-space: nowrap;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
@@ -85,7 +86,9 @@ body { overflow: hidden; }
   -webkit-backdrop-filter: blur(10px);
   transition: background-color 0.3s ease;
 }
-/* 提示文字：在空间不足时单行截断省略，避免撑爆把右侧按钮挤到第二行 */
+/* 提示文字：单行显示，内容超出框时省略为 ...（框宽不变）。
+   同时作用于容器直接文本（事件用 textContent 覆盖 span 后仍需省略） */
+.status-display,
 .status-display .status-text {
   min-width: 0;
   white-space: nowrap;
@@ -110,6 +113,27 @@ body { overflow: hidden; }
   font-size: 13px;
   font-weight: 600;
   min-width: 88px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+/* 加载态：旋转 spinner 替代纯文字「请等待...」，给出明确操控反馈 */
+.refresh-button.is-loading {
+  cursor: progress;
+  filter: saturate(0.85) brightness(0.96);
+}
+.refresh-button .btn-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: btnSpin 0.7s linear infinite;
+}
+@keyframes btnSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .refresh-button .btn-spinner { animation-duration: 1.4s; }
 }
 
 /* ===== 模态（游戏内弹窗） ===== */
@@ -129,10 +153,10 @@ body { overflow: hidden; }
   background: var(--surface-strong);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  width: 440px;
+  padding: 20px;
+  width: 400px;
   max-width: 92vw;
-  max-height: 90vh;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-soft);
@@ -142,17 +166,17 @@ body { overflow: hidden; }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: var(--space-3);
-  margin-bottom: var(--space-3);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
   border-bottom: 1px solid var(--border);
 }
-.modal-header-game h2 { margin: 0; font-size: 1.3rem; font-weight: 700; color: var(--text-strong); }
+.modal-header-game h2 { margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-strong); }
 
 .close-button {
   background: transparent;
   border: none;
-  padding: 4px 12px;
-  font-size: 1.5rem;
+  padding: 2px 10px;
+  font-size: 1.35rem;
   cursor: pointer;
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
@@ -162,7 +186,7 @@ body { overflow: hidden; }
 .close-button:hover { background: var(--accent-soft); color: var(--accent); filter: none; }
 .close-button:active { transform: scale(0.92); }
 
-.modal-body-game { flex: 1; overflow-y: auto; margin-bottom: var(--space-3); }
+.modal-body-game { flex: 1; overflow-y: auto; margin-bottom: 12px; }
 
 /* UID 选择 chips */
 .uid-list {
@@ -195,14 +219,14 @@ body { overflow: hidden; }
 .modal-footer-game {
   display: flex;
   justify-content: flex-end;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-  padding-top: var(--space-3);
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
 }
 .modal-button {
-  padding: 10px 20px;
-  font-size: 0.9rem;
+  padding: 8px 18px;
+  font-size: 0.88rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -244,7 +268,7 @@ body { overflow: hidden; }
 .hide-pools-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 7px;
   padding: 2px;
 }
 
@@ -253,8 +277,8 @@ body { overflow: hidden; }
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 52px;
-  padding: 14px 18px;
+  min-height: 44px;
+  padding: 11px 14px;
   border-radius: var(--radius);
   background: var(--surface);
   border: 1px solid var(--border);
@@ -265,7 +289,7 @@ body { overflow: hidden; }
 .pool-row:hover {
   background: var(--accent-soft);
   border-color: var(--border-strong);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 .pool-row:active { transform: scale(0.985); }
 
@@ -294,8 +318,8 @@ body { overflow: hidden; }
 /* 右侧圆形勾选指示器 */
 .pool-check {
   flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   border: 2px solid var(--border-strong);
   display: flex;
@@ -305,9 +329,9 @@ body { overflow: hidden; }
 }
 .pool-check::after {
   content: '';
-  width: 6px;
-  height: 10px;
-  margin-top: -2px;
+  width: 4px;
+  height: 8px;
+  margin-top: -1px;
   border: solid #fff;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg) scale(0);
@@ -324,7 +348,7 @@ body { overflow: hidden; }
 .pool-row.selected .pool-check {
   background: var(--gradient-primary);
   border-color: transparent;
-  box-shadow: 0 2px 8px var(--accent-soft);
+  box-shadow: 0 2px 6px var(--accent-soft);
 }
 .pool-row.selected .pool-check::after { transform: rotate(45deg) scale(1); }
 

@@ -15,7 +15,7 @@
     const DEFAULT_GAME_ROOT = '';
 
     // 当前背景状态（用于各事件重算）
-    let currentThemeMode = 'dark';
+    let currentThemeMode = 'light';
     let currentBgImage = '';
 
     // ===== 自定义主题配色 =====
@@ -249,7 +249,7 @@
 
     // 加载背景信息
     function loadBackgroundSettings() {
-        highlightThemeMode('dark'); // 首次加载默认选中深色，避免未返回 themeMode 时无高亮
+        highlightThemeMode('light'); // 首次加载默认选中浅色，避免未返回 themeMode 时无高亮
         window.electronAPI.invoke('loadBackgroundSettings').then(settings => {
             currentBgImage = settings.backgroundImage || '';
             currentThemeMode = settings.themeMode || 'dark';
@@ -324,19 +324,6 @@
             });
     });
 
-
-    // 打开头像文件夹
-    const openAvatarFolderButton = document.getElementById('openAvatarFolder');
-    if (openAvatarFolderButton) {
-        openAvatarFolderButton.addEventListener('click', async () => {
-            try {
-                const res = await window.electronAPI.openGachaAvatarFolder();
-                if (res && !res.success) animationMessage(false, "打开头像文件夹失败: " + (res.error || ""));
-            } catch (err) {
-                animationMessage(false, `打开失败\n${err.message}`);
-            }
-        });
-    }
 
     // ===== 关闭程序窗口行为（退出程序 / 系统托盘） =====
     const closeActionBtns = Array.from(document.querySelectorAll('#closeActionSwitch .theme-option'));
@@ -417,10 +404,26 @@
 
     // 加载并初始化鸣潮游戏目录
     function loadGamePath(val) {
-        gamePathInput.value = (val && val.trim()) ? val : DEFAULT_GAME_ROOT;
+        // getSetting 在未找到键时返回字符串 "false"，需归一化为空
+        const normalized = (val && val.trim() && val.trim() !== 'false') ? val.trim() : DEFAULT_GAME_ROOT;
+        gamePathInput.value = normalized;
+        return normalized;
     }
     window.electronAPI.invoke('load-settings').then(settings => {
-        if (settings && settings.gameRootDir !== undefined) loadGamePath(settings.gameRootDir);
+        const saved = (settings && settings.gameRootDir !== undefined) ? settings.gameRootDir : DEFAULT_GAME_ROOT;
+        const current = loadGamePath(saved);
+        // 用户没手动设置目录时，自动探测系统里已安装的鸣潮并把路径显示到框里
+        if (!current && window.electronAPI.detectWutheringWavesPath) {
+            window.electronAPI.detectWutheringWavesPath().then(res => {
+                const found = res && res.success && res.path ? res.path : '';
+                if (found) {
+                    gamePathInput.value = found;
+                    if (window.electronAPI.saveBackgroundSettings) {
+                        window.electronAPI.saveBackgroundSettings('gameRootDir', found);
+                    }
+                }
+            }).catch(() => { /* 探测失败保持空，用户可手动选择目录 */ });
+        }
     });
     if (browseGamePathButton) {
         browseGamePathButton.addEventListener('click', async () => {
@@ -447,50 +450,42 @@
         });
     }
 
-    // 初始化加载路径
-    loadDataPath();
-
-    // ===== 版本更新（检查 GitHub 最新发布） =====
-    const checkUpdateBtn = document.getElementById('check-update');
-    const updateStatusEl = document.getElementById('updateStatus');
-    const updateLinkEl = document.getElementById('update-link');
+    // 版本更新（基础版：检查 GitHub 最新版本，跳转下载）
     const currentVersionEl = document.getElementById('currentVersion');
-
-    if (currentVersionEl) {
-        window.electronAPI.invoke('get-app-version').then(v => {
+    if (currentVersionEl && window.electronAPI && typeof window.electronAPI.getAppVersion === 'function') {
+        window.electronAPI.getAppVersion().then(v => {
             if (v) currentVersionEl.textContent = v;
         }).catch(() => {});
     }
-
+    const checkUpdateBtn = document.getElementById('check-update');
+    const updateStatusEl = document.getElementById('updateStatus');
+    const updateLinkEl = document.getElementById('update-link');
     if (checkUpdateBtn) {
         checkUpdateBtn.addEventListener('click', async () => {
-            checkUpdateBtn.disabled = true;
-            checkUpdateBtn.textContent = '检查中...';
-            if (updateStatusEl) updateStatusEl.textContent = '正在查询 GitHub 最新发布...';
-            if (updateLinkEl) updateLinkEl.classList.add('hidden');
+            if (updateStatusEl) updateStatusEl.textContent = '正在检查更新…';
             try {
-                const res = await window.electronAPI.invoke('check-update');
+                const res = await window.electronAPI.checkUpdate();
                 if (!res || !res.success) {
-                    if (updateStatusEl) updateStatusEl.textContent = '检查失败：' + (res && res.error ? res.error : '未知错误');
+                    if (updateStatusEl) updateStatusEl.textContent = '检查失败：' + ((res && res.error) || '未知错误');
                     return;
                 }
-                if (currentVersionEl) currentVersionEl.textContent = res.currentVersion;
-                if (res.hasUpdate) {
-                    if (updateStatusEl) updateStatusEl.textContent = '发现新版本 v' + res.latestVersion + '（当前 v' + res.currentVersion + '）';
-                    if (updateLinkEl) {
-                        updateLinkEl.href = res.releaseUrl || 'https://github.com/Untsia/FeibiJiubi/releases/latest';
-                        updateLinkEl.classList.remove('hidden');
-                    }
-                } else {
-                    if (updateStatusEl) updateStatusEl.textContent = '已是最新版本（v' + res.currentVersion + '）';
+                const has = res.hasUpdate;
+                if (updateStatusEl) {
+                    updateStatusEl.textContent = has
+                        ? ('发现新版本 v' + res.latestVersion + '（当前 v' + res.currentVersion + '）')
+                        : ('已是最新版本 v' + res.currentVersion);
                 }
-            } catch (err) {
-                if (updateStatusEl) updateStatusEl.textContent = '检查失败：' + (err && err.message ? err.message : err);
-            } finally {
-                checkUpdateBtn.disabled = false;
-                checkUpdateBtn.textContent = '检查更新';
+                if (updateLinkEl) {
+                    updateLinkEl.classList.toggle('hidden', !has);
+                    if (has && res.releaseUrl) updateLinkEl.href = res.releaseUrl;
+                }
+            } catch (e) {
+                if (updateStatusEl) updateStatusEl.textContent = '检查失败：' + (e && e.message ? e.message : e);
             }
         });
     }
+
+    // 初始化加载路径
+    loadDataPath();
 
 })();

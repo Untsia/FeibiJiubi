@@ -19,8 +19,9 @@ test('loadBackground 无图深色使用纯色底', async () => {
   const { fakeWin, get } = captureLoader([]);
   await loadBackground(fakeWin);
   const js = get();
-  assert.match(js, /rgb\(24, 26, 34\)/);
-  assert.match(js, /classList\.toggle\('theme-light', false\)/);
+  // 背景值经 JSON.stringify 注入，内部已是字符串；theme-light 经变量 toggle（无引号）
+  assert.match(js, /background = "rgb\(245, 246, 250\)"/);
+  assert.match(js, /classList\.toggle\('theme-light', true\)/);
 });
 
 // ---------- 场景 2：浅色模式 → rgb(245,246,250) 并加 theme-light ----------

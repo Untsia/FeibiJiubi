@@ -27,6 +27,14 @@ require('./core/app/settings/dataFile');
 require("./core/app/console");  // 导入日志管理
 require('./core/services/syncMessage'); //导入消息通知
 
+// 全局异常捕获：防止单个未捕获错误导致整个应用静默崩溃，统一写入日志文件
+process.on('uncaughtException', (err) => {
+    console.error('[FATAL] uncaughtException:', err && err.stack ? err.stack : err);
+});
+process.on('unhandledRejection', (reason) => {
+    console.error('[FATAL] unhandledRejection:', reason && reason.stack ? reason.stack : reason);
+});
+
 
 const { initializeDatabase, getSetting, setSetting} = require('./core/app/database');
 const gotTheLock = app.requestSingleInstanceLock();

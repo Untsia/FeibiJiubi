@@ -25,7 +25,7 @@
 }
 .analysis-view { display: none; flex: 1; min-height: 0; }
 .analysis-view.active { display: flex; animation: viewFadeIn 0.32s cubic-bezier(0.2, 0, 0, 1) both; }
-#view-intuitive.active { flex-direction: column; }
+#view-intuitive.active, #view-bar.active { flex-direction: column; }
 /* 等级视图：让卡片填满视图高度，表格区作为唯一滚动容器，避免与外层 .record-display 嵌套滚动而卡在底部 */
 #view-level.active { flex-direction: column; height: 100%; min-height: 0; }
 /* 等级视图下禁用外层 .record-display 滚动，所有滚动只交给内层 .grow-scroll，
@@ -742,7 +742,7 @@
   align-items: center;
   gap: 2px;
   padding: 4px;
-  /* 深色模式下原 var(--surface) 为深灰近黑，未选中区像“黑块”；
+  /* 深色模式下原 var(--surface) 为深灰近黑，未选中区像"黑块"；
      改为淡白玻璃轨道，呈现通透浅玻璃而非黑块 */
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
@@ -773,7 +773,7 @@
   color: var(--accent);
   background: var(--accent-soft);
   /* 用主题色 token 光晕替代硬编码紫罗兰：随主题（含自定义主色）变化，
-     描边光环 + 投影 + 顶部内高光，让选中态呈“发光浮起”。
+     描边光环 + 投影 + 顶部内高光，让选中态呈"发光浮起"。
      描边用 --accent-soft（已是半透明主题色），避免 color-mix 兼容性问题 */
   box-shadow:
     0 0 0 1px var(--accent-soft),
@@ -809,7 +809,7 @@
   color: var(--text-primary);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  /* 深色模式原纯黑阴影在暗玻璃上发“黑块”，改为紧致深投影 + 紫罗兰微光 + 顶部内高光 */
+  /* 深色模式原纯黑阴影在暗玻璃上发"黑块"，改为紧致深投影 + 紫罗兰微光 + 顶部内高光 */
   box-shadow:
     0 10px 28px -12px rgba(0, 0, 0, 0.55),
     0 1px 10px -2px rgba(124, 131, 255, 0.20),
@@ -818,14 +818,6 @@
   flex-direction: column;
   overflow: hidden;
   animation: cardIn 0.5s cubic-bezier(0.2, 0, 0, 1) both;
-}
-.intuitive-card.pool-all {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 12%, transparent), rgba(255, 255, 255, 0) 44%), var(--surface);
-  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
-  box-shadow:
-    0 10px 28px -12px rgba(0, 0, 0, 0.55),
-    0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 .intuitive-card.pool-all .intuitive-card-title-text {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
@@ -951,17 +943,17 @@ body.theme-light .mini-value {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   padding: 0;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.02em;
   color: #ff8a98;
-  background: rgba(255, 99, 110, 0.18);
-  border: 1px solid rgba(255, 99, 110, 0.45);
+  background: rgba(255, 99, 110, 0.20);
+  border: 1px solid rgba(255, 99, 110, 0.50);
   border-radius: 50%;
-  box-shadow: 0 1px 4px rgba(255, 99, 110, 0.28);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.22);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   pointer-events: none;
@@ -974,17 +966,17 @@ body.theme-light .mini-value {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   padding: 0;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.02em;
   color: #ffd24a;
-  background: rgba(255, 196, 0, 0.18);
-  border: 1px solid rgba(255, 196, 0, 0.45);
+  background: rgba(255, 196, 0, 0.20);
+  border: 1px solid rgba(255, 196, 0, 0.50);
   border-radius: 50%;
-  box-shadow: 0 1px 4px rgba(255, 196, 0, 0.28);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.22);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   pointer-events: none;
@@ -1038,7 +1030,7 @@ body.theme-light .mini-value {
   border: 1px solid var(--border);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  /* 深色模式原纯黑阴影发“黑块”，改为紧致深投影 + 紫罗兰微光 */
+  /* 深色模式原纯黑阴影发"黑块"，改为紧致深投影 + 紫罗兰微光 */
   box-shadow:
     0 12px 32px -14px rgba(0, 0, 0, 0.55),
     0 1px 12px -2px rgba(124, 131, 255, 0.20);
@@ -1667,6 +1659,54 @@ body.theme-light .level-current-row td {
 .sub-view-row { display: flex; align-items: center; gap: 12px; width: 100%; }
 .account-sync-inline { width: 180px; margin-left: auto; }
 
+/* ====================== 骨架屏（数据重载占位） ====================== */
+/* 与卡片 Tab 等宽对齐，避免加载前后布局跳动 */
+.skeleton-screen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 450px);
+  gap: 16px;
+  width: 100%;
+  padding: 0 2px 12px;
+  align-content: start;
+}
+.skeleton-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sk-line, .sk-cell {
+  position: relative;
+  overflow: hidden;
+  background: var(--border);
+  border-radius: var(--radius-sm);
+}
+.sk-line { height: 16px; }
+.sk-title { width: 45%; height: 20px; }
+.sk-foot { width: 70%; height: 12px; opacity: 0.7; }
+.sk-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.sk-cell { height: 56px; }
+/* 流光扫过：明确告知「正在加载」，缓解等待焦虑 */
+.sk-line::after, .sk-cell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--text-primary) 14%, transparent), transparent);
+  animation: skShimmer 1.3s ease-in-out infinite;
+}
+@keyframes skShimmer { 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) {
+  .sk-line::after, .sk-cell::after { animation: none; }
+}
+
 /* ====================== 动效 / 空状态 / 骨架屏 增强 ====================== */
 
 /* 卡片入场动效：统一柔和的淡入上浮，带轻微交错，让数据卡片有「逐张浮现」的呼吸感 */
@@ -1718,3 +1758,103 @@ body.theme-light .level-current-row td {
 .empty-state .empty-icon svg { width: 34px; height: 34px; }
 .empty-state .empty-title { font-size: 16px; }
 .empty-state .empty-hint { font-size: 13px; opacity: 0.85; }
+
+
+/* ===== 条形视图 ===== */
+/* 与卡片 Tab 的 .intuitive-grid 完全一致：固定 450px 列宽、靠左并排、窗口放大时增列而非拉宽，
+   保证条形卡池卡片与卡片 Tab 卡池卡片等宽对齐 */
+.bar-view {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 450px);
+  gap: 16px;
+  width: 100%;
+  padding: 0 2px 12px;
+  align-content: start;
+  justify-items: stretch;
+}
+.bar-pool-section {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 40%), var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 16px 16px;
+  color: var(--text-primary);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow:
+    0 10px 28px -12px rgba(0, 0, 0, 0.55),
+    0 1px 10px -2px rgba(124, 131, 255, 0.20),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: cardIn 0.5s cubic-bezier(0.2, 0, 0, 1) both;
+}
+body.theme-light .bar-pool-section {
+  box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.bar-pool-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.bar-pool-title { font-size: 15px; font-weight: 700; color: var(--text-strong); letter-spacing: 0.02em; white-space: nowrap; }
+.pool-all .bar-pool-title {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.bar-head-left { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.bar-pool-date { font-size: 11px; color: var(--text-muted); }
+.bar-pool-rows { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.bar-row { display: flex; align-items: center; gap: 12px; }
+.bar-track { flex: 1; min-width: 0; }
+.bar-row.deviation { border-radius: 10px; margin: 0 -8px; padding: 4px 8px; }
+.bar-avatar-wrap { position: relative; width: 34px; height: 34px; flex-shrink: 0; }
+.bar-avatar-wrap img { width: 100%; height: 100%; border-radius: 9px; object-fit: cover; }
+.bar-avatar-wrap .record-star { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 9px; font-size: 10px; font-weight: 700; }
+.bar-deviation-badge, .bar-pity-badge {
+  position: absolute; right: -5px; top: -5px;
+  width: 18px; height: 18px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  pointer-events: none; user-select: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.22);
+}
+.bar-deviation-badge {
+  color: #ff8a98;
+  background: rgba(255, 99, 110, 0.20);
+  border-color: rgba(255, 99, 110, 0.50);
+}
+.bar-pity-badge {
+  color: #ffd24a;
+  background: rgba(255, 196, 0, 0.20);
+  border-color: rgba(255, 196, 0, 0.50);
+}
+.bar-track {
+  height: 26px; border-radius: 8px;
+  background: rgba(255,255,255,0.08);
+  overflow: hidden; position: relative;
+}
+body.theme-light .bar-track { background: rgba(0,0,0,0.06); }
+.bar-fill {
+  height: 100%; border-radius: 8px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 10px;
+  transition: width 0.5s cubic-bezier(0.2,0,0,1);
+  min-width: 34px;
+}
+.bar-name-in { font-size: 12px; font-weight: 600; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.28); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-fill-text { font-size: 12px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.25); white-space: nowrap; flex-shrink: 0; }
+.bar-row.pity-row .bar-name-in { color: rgba(255,255,255,0.92); }
+
+@media (max-width: 560px) {
+  .bar-pool-section { padding: 13px 14px; }
+  .bar-pool-head { flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 10px; }
+  .bar-avatar-wrap { width: 32px; height: 32px; }
+  .bar-track { height: 20px; }
+  .bar-name-in { font-size: 11px; }
+  .bar-fill { padding: 0 8px; }
+  .bar-fill-text { font-size: 10px; }
+}

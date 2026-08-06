@@ -10,7 +10,6 @@
     <script src="scripts/tools/syncNotification.js"></script>
     <script src="scripts/tools/modalManager.js"></script>
     <script src="./scripts/import/chart.js"></script>
-    <script src="./scripts/import/echarts.min.js"></script>
 </head>
 <body>
     <div class="aurora-bg" aria-hidden="true"></div>
@@ -101,6 +100,35 @@
         </nav>
         <main id="content" class="content"></main>
     </div>
+    <!-- 启动时发现新版本提示 -->
+    <div id="update-modal" class="modal">
+        <div class="modal-content update-modal-card">
+            <div class="modal-header update-modal-header">
+                <span class="update-modal-icon">✨</span>
+                <span>发现新版本</span>
+            </div>
+            <div class="modal-body update-modal-body">
+                <div class="update-version-row">
+                    <span class="update-badge" id="update-current">当前 v1.2.1</span>
+                    <span class="update-arrow">→</span>
+                    <span class="update-badge update-badge-new" id="update-latest">v1.4.0</span>
+                </div>
+                <p class="update-modal-text" id="update-desc">菲比啾比已发布新版本，点击「立即更新」可在程序内一键完成下载与安装，无需手动操作。</p>
+                <div class="update-progress" id="update-progress" style="display:none;">
+                    <div class="update-progress-bar"><div class="update-progress-fill" id="update-progress-fill"></div></div>
+                    <div class="update-progress-meta">
+                        <span id="update-progress-pct">0%</span>
+                        <span id="update-progress-speed"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer update-modal-footer">
+                <button type="button" id="update-later" class="modal-button modal-button-ghost">稍后</button>
+                <button type="button" id="update-go" class="modal-button modal-button-primary">立即更新</button>
+            </div>
+        </div>
+    </div>
+
     <script src="scripts/background.js"></script>
     <script src="scripts/renderer.js"></script>
 </body>

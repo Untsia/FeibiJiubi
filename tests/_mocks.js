@@ -36,6 +36,7 @@ const mockElectron = {
 const mockAxios = {
   post: async () => ({ data: { data: [] } }),
   get: async () => ({ data: {} }),
+  create: () => mockAxios, // gachaUtils 使用 axios.create 创建实例，复用同一 mock
 };
 
 // 可控的数据库 mock（回调/Promise 双支持），测试里可覆盖 .get/.all/.run/.prepare

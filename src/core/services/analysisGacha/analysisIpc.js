@@ -2,7 +2,7 @@ const { ipcMain, clipboard } = require('electron');
 const { db2, getSetting, setSetting } = require('../../app/database'); // 引入数据库实例
 const { parseGachaUrl, fetchAllGachaLogs } = require('./gachaUtils'); // 工具方法
 const { getGamePath, extractGachaUrl } = require("./getWutheringWavesPath"); // 获取游戏路径和唤取链接
-const { getGachaUrlFromGameLogs } = require("./gameLogReader"); // 鸣潮内获取：从游戏日志解析唤取链接
+const { getGachaUrlFromGameLogs, locateGameDir } = require("./gameLogReader"); // 鸣潮内获取：从游戏日志解析唤取链接
 const gachaDb = db2; // 数据库实例
 const { getTreasureBoxes, listTreasureAccounts, getAccountInfo, getMainAccount, getGameAccountState } = require('./kujiequTreasure'); // 复用官方启动器本地登录态拉取奇藏数据
 
@@ -166,6 +166,23 @@ ipcMain.handle('get-wuthering-waves-gacha-url', async () => {
     } catch (err) {
         console.error("获取唤取链接失败:", err.message);
         return { success: false, error: err.message };
+    }
+});
+
+/**
+ * 自动探测鸣潮游戏目录：优先用设置里已保存的路径，否则走注册表/扫盘自动发现。
+ * 设置页「鸣潮游戏目录」显示框在没有用户手动设置时，用此结果回填，让用户知道程序读到了哪里。
+ */
+ipcMain.handle('detect-wuthering-waves-path', async () => {
+    try {
+        // 已保存的手动路径优先
+        const saved = await new Promise((resolve) =>
+            getSetting('gameRootDir', (err, v) => resolve((!err && v && v !== 'false') ? v : null)));
+        const dir = await locateGameDir(saved);
+        return { success: true, path: dir || '' };
+    } catch (err) {
+        console.error("探测鸣潮目录失败:", err.message);
+        return { success: false, path: '', error: err.message };
     }
 });
 

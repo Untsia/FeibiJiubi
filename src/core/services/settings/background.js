@@ -97,7 +97,7 @@ async function loadBackgroundSettings() {
             acc[row.key] = row.value;
             return acc;
         }, {});
-        return Object.assign({ themeMode: 'dark', accentColor: '#7c83ff', backgroundImage: null }, result); // 返回数据（含默认）
+        return Object.assign({ themeMode: 'light', accentColor: '#7c83ff', backgroundImage: null }, result); // 返回数据（含默认）
     } catch (err) {
         console.error(err);
         return {};  // 出现错误时返回空对象
@@ -124,7 +124,7 @@ async function loadBackground(mainWindow) {
     try {
         // 请求加载背景设置
         const settings = await loadBackgroundSettings();
-        const themeMode = settings.themeMode || 'dark';
+        const themeMode = settings.themeMode || 'light';
         const bgOpacity = '0.5'; // 背景遮罩固定默认透明度（亮度调节已移除）
         const accentJs = buildAccentInject(settings.accentColor);
         const isLight = themeMode === 'light';
@@ -161,7 +161,7 @@ ipcMain.handle('restoreDefaultBackgroundSettings', async () => {
 
         // 更新数据库
         await db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', ['backgroundImage', defaultBackgroundImage]);
-        await db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', ['themeMode', 'dark']);
+        await db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', ['themeMode', 'light']);
 
         console.log('已恢复默认背景设置');
     } catch (error) {

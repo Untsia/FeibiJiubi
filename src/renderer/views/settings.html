@@ -46,13 +46,6 @@
                 <div class="option-control full">
                     <input type="text" id="background-path" readonly required>
                     <button type="button" id="browse-background">选择图片</button>
-                </div>
-            </div>
-            <div class="settings-option">
-                <div class="option-info">
-                    <span class="option-title">恢复默认背景</span>
-                </div>
-                <div class="option-control">
                     <button type="button" id="restore-defaults" class="secondary">恢复默认</button>
                 </div>
             </div>
@@ -69,7 +62,7 @@
                     <p class="option-desc">用于不启动启动器也能读取本地账号状态，请点击「选择目录」指定你本机的游戏路径</p>
                 </div>
                 <div class="option-control full">
-                    <input type="text" id="game-path" readonly required>
+                    <input type="text" id="game-path" readonly required placeholder="未设置鸣潮游戏目录">
                     <div class="btn-row">
                         <button type="button" id="browse-game-path" class="secondary">选择目录</button>
                         <button type="button" id="reset-game-path" class="secondary">恢复默认</button>
@@ -87,15 +80,6 @@
                         <button type="button" id="browse-dataFile" class="secondary">更换路径</button>
                         <button type="button" id="reset-dataFile" class="secondary">恢复默认</button>
                     </div>
-                </div>
-            </div>
-            <div class="settings-option">
-                <div class="option-info">
-                    <span class="option-title">头像文件夹</span>
-                    <p class="option-desc">打开本地角色与武器头像目录</p>
-                </div>
-                <div class="option-control">
-                    <button id="openAvatarFolder">打开</button>
                 </div>
             </div>
         </div>
@@ -125,6 +109,8 @@
                 <div class="option-control full">
                     <div class="btn-row">
                         <button type="button" id="check-update">检查更新</button>
+                        <button type="button" id="update-download" class="update-link hidden">下载更新</button>
+                        <button type="button" id="update-install" class="update-link hidden">重启并安装</button>
                         <a id="update-link" class="update-link hidden" href="https://github.com/Untsia/FeibiJiubi/releases/latest" target="_blank" rel="noopener">前往下载</a>
                     </div>
                     <p class="option-status" id="updateStatus"></p>
