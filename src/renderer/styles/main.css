@@ -5,7 +5,21 @@
    ================================================================= */
 
 /* ----------------------- 打包字体（HarmonyOS Sans 鸿蒙，离线内嵌全套：中文/阿拉伯/英文） ----------------------- */
-/* 中文（简体）SC：Regular / Medium / Bold */
+/* 中文（简体）SC：Thin / Light / Regular / Medium / Bold / Black */
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  src: url("../assets/fonts/sc/HarmonyOS_Sans_SC_Thin.ttf") format("truetype");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  src: url("../assets/fonts/sc/HarmonyOS_Sans_SC_Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
 @font-face {
   font-family: "HarmonyOS Sans SC";
   src: url("../assets/fonts/sc/HarmonyOS_Sans_SC_Regular.ttf") format("truetype");
@@ -24,6 +38,13 @@
   font-family: "HarmonyOS Sans SC";
   src: url("../assets/fonts/sc/HarmonyOS_Sans_SC_Bold.ttf") format("truetype");
   font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  src: url("../assets/fonts/sc/HarmonyOS_Sans_SC_Black.ttf") format("truetype");
+  font-weight: 900;
   font-style: normal;
   font-display: swap;
 }
