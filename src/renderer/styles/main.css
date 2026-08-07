@@ -4,11 +4,112 @@
    由 token 驱动，深色为默认主题，浅色仅覆盖变量即可换肤。
    ================================================================= */
 
-/* ----------------------- 打包字体（Source Han Sans SC 思源黑体，离线内嵌 Variable Font） ----------------------- */
+/* ----------------------- 打包字体（HarmonyOS Sans 鸿蒙，离线内嵌全套：中文/阿拉伯/英文） ----------------------- */
+/* 中文（简体）SC：Regular / Medium / Bold */
 @font-face {
-  font-family: "Source Han Sans SC";
-  src: url("../assets/fonts/SourceHanSansSC-VF.ttf") format("truetype");
-  font-weight: 100 900;
+  font-family: "HarmonyOS Sans SC";
+  src: url("../assets/fonts/sc/HarmonyOS_Sans_SC_Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  src: url("../assets/fonts/sc/HarmonyOS_Sans_SC_Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  src: url("../assets/fonts/sc/HarmonyOS_Sans_SC_Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+/* 英文 / 拉丁 HarmonyOS Sans：Thin / Light / Regular / Medium / Bold / Black */
+@font-face {
+  font-family: "HarmonyOS Sans";
+  src: url("../assets/fonts/latin/HarmonyOS_Sans_Thin.ttf") format("truetype");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans";
+  src: url("../assets/fonts/latin/HarmonyOS_Sans_Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans";
+  src: url("../assets/fonts/latin/HarmonyOS_Sans_Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans";
+  src: url("../assets/fonts/latin/HarmonyOS_Sans_Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans";
+  src: url("../assets/fonts/latin/HarmonyOS_Sans_Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans";
+  src: url("../assets/fonts/latin/HarmonyOS_Sans_Black.ttf") format("truetype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+/* 阿拉伯文 Naskh Arabic：Thin / Light / Regular / Medium / Bold / Black */
+@font-face {
+  font-family: "HarmonyOS Sans Naskh Arabic";
+  src: url("../assets/fonts/arabic/HarmonyOS_Sans_Naskh_Arabic_Thin.ttf") format("truetype");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans Naskh Arabic";
+  src: url("../assets/fonts/arabic/HarmonyOS_Sans_Naskh_Arabic_Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans Naskh Arabic";
+  src: url("../assets/fonts/arabic/HarmonyOS_Sans_Naskh_Arabic_Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans Naskh Arabic";
+  src: url("../assets/fonts/arabic/HarmonyOS_Sans_Naskh_Arabic_Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans Naskh Arabic";
+  src: url("../assets/fonts/arabic/HarmonyOS_Sans_Naskh_Arabic_Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans Naskh Arabic";
+  src: url("../assets/fonts/arabic/HarmonyOS_Sans_Naskh_Arabic_Black.ttf") format("truetype");
+  font-weight: 900;
   font-style: normal;
   font-display: swap;
 }
@@ -80,8 +181,8 @@
   --glass-border: rgba(198, 212, 240, 0.18); /* 极淡冷色边框 */
   --scrim: rgba(12, 13, 18, 0.58);
 
-  --font: "Source Han Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI Variable", "Segoe UI", "PingFang SC", system-ui, -apple-system, sans-serif;
-  --font-num: "Source Han Sans SC", "SF Pro Display", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font: "HarmonyOS Sans SC", "HarmonyOS Sans", "HarmonyOS Sans Naskh Arabic", "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI Variable", "Segoe UI", "PingFang SC", system-ui, -apple-system, sans-serif;
+  --font-num: "HarmonyOS Sans", "HarmonyOS Sans SC", "SF Pro Display", "Segoe UI", system-ui, -apple-system, sans-serif;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
