@@ -442,17 +442,7 @@ function initRecordTooltips() {
     });
 }
 
-function applyHiddenPools() {
-  const hidden = getHiddenPools();
-  document.querySelectorAll('.card-pool').forEach(poolEl => {
-    const title = poolEl.querySelector('.card-title')?.textContent?.trim();
-    if (!title) return;
-    poolEl.style.display = hidden.has(title) ? 'none' : '';
-  });
-  // 隐藏“全部卡池”汇总卡
-  const allCard = document.querySelector('.intuitive-card.pool-all');
-  if (allCard) allCard.style.display = hidden.has('__SUMMARY_ALL__') ? 'none' : '';
-}
+
 
 function toDatetimeLocalValue(date) {
   // date: Date

@@ -147,7 +147,6 @@ body { overflow: hidden; }
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  animation: fadeIn 0.25s ease;
 }
 .modal-content-game {
   background: var(--surface-strong);
@@ -160,7 +159,6 @@ body { overflow: hidden; }
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-soft);
-  animation: slideIn 0.3s ease;
 }
 .modal-header-game {
   display: flex;

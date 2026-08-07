@@ -20,8 +20,11 @@ function compareVersion(a, b) {
     }
     return 0;
 }
-// 启用 GPU 光栅化，让 backdrop-filter 模糊与动画在 GPU 上合成，提升流畅度（不改变任何视觉）
-app.commandLine.appendSwitch('--enable-gpu-rasterization');
+// 启用 GPU 硬件加速，让 backdrop-filter 模糊与动画在 GPU 上合成，提升流畅度（不改变任何视觉）
+app.commandLine.appendSwitch('--enable-gpu-rasterization');   // GPU 光栅化
+app.commandLine.appendSwitch('--enable-gpu-compositing');     // 强制 GPU 合成
+app.commandLine.appendSwitch('--ignore-gpu-blocklist');       // 忽略 GPU 黑名单（集显/老显卡也能启用）
+app.commandLine.appendSwitch('--enable-unsafe-swiftshader');  // 无独显时回退软件渲染，避免毛玻璃整体失效
 //在调用database前设置
 require('./core/app/settings/dataFile');
 require("./core/app/console");  // 导入日志管理

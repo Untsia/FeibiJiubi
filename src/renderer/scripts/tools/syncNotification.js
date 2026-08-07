@@ -33,30 +33,10 @@ function animationMessage(success, message) {
         });
     });
 
-    // 动画显示浮窗
-    setTimeout(() => {
-        notification.style.top = '42px';
-    }, 10);
+    // 即时显示浮窗，无延迟
+    notification.style.top = '42px';
 
-    let hoverTimeout;
-    hoverTimeout = setTimeout(() => {
-        notification.style.top = '-120px';
-        setTimeout(() => {
-            document.body.removeChild(notification);}, 500);
-        }, 3000);
-
-    notification.addEventListener('mouseenter', () => {
-        clearTimeout(hoverTimeout);
-    });
-
-    notification.addEventListener('mouseleave', () => {
-        hoverTimeout = setTimeout(() => {
-            notification.style.top = '-120px';
-            setTimeout(() => {
-                document.body.removeChild(notification);
-            }, 500);
-        }, 1500);
-    });
+    // 移除所有自动隐藏延迟：浮窗常驻直到手动关掉（点击 X 或下次同步覆盖）
 }
 
 function showCopyTooltip(event, copyMessage) {
@@ -72,17 +52,12 @@ function showCopyTooltip(event, copyMessage) {
     tooltip.style.top = `${mouseY + 10}px`;
 
     document.body.appendChild(tooltip);
+    tooltip.classList.add('show'); // 即时显示，无延迟
 
+    // 即时移除，无 1 秒等待
     setTimeout(() => {
-        tooltip.classList.add('show');
-    }, 10);
-
-    setTimeout(() => {
-        tooltip.classList.add('fade-out');
-        setTimeout(() => {
-            document.body.removeChild(tooltip);
-        }, 300);
-    }, 1000);
+        document.body.removeChild(tooltip);
+    }, 100);
 }
 
 

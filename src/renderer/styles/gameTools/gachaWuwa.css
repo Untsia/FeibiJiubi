@@ -24,7 +24,7 @@
   scrollbar-gutter: stable;
 }
 .analysis-view { display: none; flex: 1; min-height: 0; }
-.analysis-view.active { display: flex; animation: viewFadeIn 0.32s cubic-bezier(0.2, 0, 0, 1) both; }
+.analysis-view.active { display: flex; }
 #view-intuitive.active, #view-bar.active { flex-direction: column; }
 /* 等级视图：让卡片填满视图高度，表格区作为唯一滚动容器，避免与外层 .record-display 嵌套滚动而卡在底部 */
 #view-level.active { flex-direction: column; height: 100%; min-height: 0; }
@@ -55,7 +55,7 @@
 .detail-filter-pop,
 .grow-card { will-change: transform, opacity; }
 
-.stat-content.re-fade { animation: viewFadeIn 0.26s cubic-bezier(0.2, 0, 0, 1) both; }
+.stat-content.re-fade { }
 /* ===== 卡池卡片（重设计：干净、现代、通透） ===== */
 
 .card-pool {
@@ -78,7 +78,6 @@
     var(--shadow-card),
     inset 0 1px 0 rgba(255,255,255,0.07);
   transition: transform 0.35s cubic-bezier(0.2,0,0,1), box-shadow 0.35s ease, border-color 0.3s ease;
-  animation: cardIn 0.55s cubic-bezier(0.2,0,0,1) both;
 }
 /* 顶部柔光，强化玻璃质感 */
 .card-pool::before {
@@ -1719,7 +1718,9 @@ body.theme-light .level-current-row td {
 .intuitive-char-card,
 .detail-card,
 .rating-chart-card,
-.grow-card {
+.grow-card,
+#view-detail.active,
+.gacha-row {
   animation: cardIn 0.5s var(--ease-out) both;
 }
 /* 交错：同一容器内多张卡片依次浮现（最多 12 张） */
@@ -1738,6 +1739,18 @@ body.theme-light .level-current-row td {
 .intuitive-char-card:nth-child(6) { animation-delay: 0.20s; }
 .intuitive-char-card:nth-child(7) { animation-delay: 0.24s; }
 .intuitive-char-card:nth-child(8) { animation-delay: 0.28s; }
+/* 列表 表格行逐行错落浮现（与卡片视图一致的呼吸感） */
+.gacha-row:nth-child(2) { animation-delay: 0.03s; }
+.gacha-row:nth-child(3) { animation-delay: 0.06s; }
+.gacha-row:nth-child(4) { animation-delay: 0.09s; }
+.gacha-row:nth-child(5) { animation-delay: 0.12s; }
+.gacha-row:nth-child(6) { animation-delay: 0.15s; }
+.gacha-row:nth-child(7) { animation-delay: 0.18s; }
+.gacha-row:nth-child(8) { animation-delay: 0.21s; }
+.gacha-row:nth-child(9) { animation-delay: 0.24s; }
+.gacha-row:nth-child(10) { animation-delay: 0.27s; }
+.gacha-row:nth-child(11) { animation-delay: 0.30s; }
+.gacha-row:nth-child(12) { animation-delay: 0.33s; }
 
 /* 空状态精修：更大留白 + 图标柔和发光呼吸，与极光氛围呼应 */
 .empty-state {

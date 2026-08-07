@@ -113,7 +113,6 @@ async function loadPlayerUIDs(defaultUid) {
                     await loadPlayerUIDs(lastUid); // 加载玩家 UID 下拉框
                     await loadGachaRecords(lastUid); // 加载对应记录
                     animationMessage(true, `成功删除 UID: ${uid} 的记录`);
-                    applyHiddenPools();
                 } catch (error) {
                     animationMessage(false, `删除失败: ${error.message}`);
                 }
@@ -758,7 +757,6 @@ async function gachaWuwaInit() {
     initScrollLogic(); // 初始化滚动逻辑
     initRecordTooltips();
     initSettingsMenu();
-    applyHiddenPools();
 
     // 监听 UID 切换
     document.querySelector('.selected-display').addEventListener('click', async () => {
@@ -786,7 +784,6 @@ async function gachaWuwaInit() {
 
             // 加载对应的抽卡记录
             await loadGachaRecords(selectedUid);
-            applyHiddenPools();
         }
     });
 
@@ -954,7 +951,6 @@ async function openHidePoolsModal() {
       try { renderTableView(lastIntuitiveData.records); } catch (e) { console.error('表格视图重渲染失败', e); }
       try { if (typeof window.__renderDetailView === 'function') window.__renderDetailView(); } catch (e) { console.error('详情视图重渲染失败', e); }
     }
-    applyHiddenPools(); // 详情视图等按 .card-pool 显隐
     animationMessage(true, '已应用隐藏卡池设置');
   };
   confirmBtn.onclick = applyHidden;
@@ -1008,7 +1004,6 @@ async function reloadGachaData(preferredUid) {
     if (rd) rd.innerHTML = skeletonHtml();
     await loadGachaRecords(uid); // 重载记录（其内部会清空 record-display 再渲染真实内容）
     if (myToken !== _reloadToken) return; // 已有更新的重载，交给它落地
-    applyHiddenPools();
     syncTreasureBoxes();
 }
 
@@ -1359,6 +1354,7 @@ function renderBarView(records, pools) {
 function renderIntuitiveView(records, pools) {
     const view = document.getElementById('view-intuitive');
     if (!view) return;
+    lastIntuitiveData = { records, pools };
     view.innerHTML = '';
     const hidden = getHiddenPools();
     const POOL_ORDER = [

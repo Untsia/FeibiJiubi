@@ -199,7 +199,7 @@
         }
         function closePop() {
             pop.classList.remove('show');
-            setTimeout(function () { pop.hidden = true; }, 180);
+            pop.hidden = true; // 即时关闭，无延迟
         }
         presetsBox.innerHTML = presetColors.map(function (c) {
             return '<button type="button" class="cpp-preset" style="--pc:' + c + '" data-c="' + c + '" title="' + c + '"></button>';

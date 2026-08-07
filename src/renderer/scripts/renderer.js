@@ -43,8 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (currentPage === page) {
             const activeTab = document.querySelector(`.tab[data-page="${page}"]`);
             if (activeTab) {
-                activeTab.classList.add("clicked-effect");
-                setTimeout(() => activeTab.classList.remove("clicked-effect"), 200);
+                // 点击高亮动画已移除，即时切换无延迟
             }
             return;
         }

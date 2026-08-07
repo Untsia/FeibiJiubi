@@ -770,24 +770,10 @@ input::placeholder { color: var(--text-muted); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.clicked-effect { animation: clickEffect 0.2s ease; }
-@keyframes clickEffect {
-  0% { transform: scale(1); }
-  50% { transform: scale(0.95); }
-  100% { transform: scale(1); }
-}
+.clicked-effect { }
 
-/* 模态淡入淡出 */
-.fade-out { animation: fadeOut 0.2s forwards; }
-.fade-in { animation: fadeIn 0.3s forwards; }
+/* 模态淡入淡出（已关闭动画，保留类名兼容） */
+.fade-out { }
+.fade-in { }
 
-/* 页面切换丝滑入场：每次 loadPage 重建子元素即自动播放（带轻微交错） */
-@keyframes pageIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: none; }
-}
-.content > * { animation: pageIn 0.42s var(--ease-out) both; }
-.content > *:nth-child(2) { animation-delay: 0.04s; }
-.content > *:nth-child(3) { animation-delay: 0.08s; }
-.content > *:nth-child(4) { animation-delay: 0.12s; }
-.content > *:nth-child(5) { animation-delay: 0.16s; }
+/* 页面切换入场动画已关闭（即时显示，无延迟） */
