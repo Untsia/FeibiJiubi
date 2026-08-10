@@ -4,7 +4,7 @@ const { parseGachaUrl, fetchAllGachaLogs } = require('./gachaUtils'); // 工具�
 const { getGamePath, extractGachaUrl } = require("./getWutheringWavesPath"); // 获取游戏路径和唤取链接
 const { getGachaUrlFromGameLogs, locateGameDir } = require("./gameLogReader"); // 鸣潮内获取：从游戏日志解析唤取链接
 const gachaDb = db2; // 数据库实例
-const { getTreasureBoxes, listTreasureAccounts, getAccountInfo, getMainAccount, getGameAccountState } = require('./kujiequTreasure'); // 复用官方启动器本地登录态拉取奇藏数据
+const { getTreasureBoxes, listTreasureAccounts, getMainAccount, getGameAccountState } = require('./kujiequTreasure'); // 复用官方启动器本地登录态拉取奇藏数据
 
 // 将 gachaDb 的回调式 API 封装为 Promise，消除重复的 new Promise 样板
 function dbGet(sql, params = []) {
@@ -213,32 +213,6 @@ ipcMain.handle('get-treasure-boxes', async (event, playerId) => {
     }
 });
 
-// 拉取账号信息面板数据（头像/昵称/等级/体力/活跃天数/通行证/宝箱），免 UID 自动定位主账号
-ipcMain.handle('get-account-info', async (event, arg) => {
-    try {
-        let oauthCode = null, isGlobal = null;
-        if (arg && typeof arg === 'object') { oauthCode = arg.oauthCode || null; isGlobal = arg.isGlobal != null ? arg.isGlobal : null; }
-        const info = await getAccountInfo(oauthCode, isGlobal);
-        return { success: true, info };
-    } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error('获取账号信息失败:', msg);
-        return { success: false, error: msg };
-    }
-});
-
-// 返回启动器本地缓存中的主账号（用于免 UID 自动同步）
-ipcMain.handle('get-main-account', async () => {
-    try {
-        const m = getMainAccount();
-        return { success: !!m, account: m };
-    } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error('获取主账号失败:', msg);
-        return { success: false, error: msg };
-    }
-});
-
 // 列出当前抽卡 UID 对应区服下所有启动器登录态账号，供前端同步账号选择框使用
 ipcMain.handle('list-treasure-accounts', async (event, playerId) => {
     try {
@@ -254,6 +228,18 @@ ipcMain.handle('list-treasure-accounts', async (event, playerId) => {
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error('列出奇藏账号失败:', msg);
+        return { success: false, error: msg };
+    }
+});
+
+// 返回启动器本地缓存中的主账号（用于免 UID 自动同步）
+ipcMain.handle('get-main-account', async () => {
+    try {
+        const m = getMainAccount();
+        return { success: !!m, account: m };
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error('获取主账号失败:', msg);
         return { success: false, error: msg };
     }
 });

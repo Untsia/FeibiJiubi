@@ -7,9 +7,9 @@
 
 - **运行时**：Electron v33（主进程）+ 原生渲染进程（无 React/Vue 等框架）
 - **数据存储**：`better-sqlite3`（运行期）+ `sqlite3`（构建期）
-- **图表**：ECharts（`import/echarts.min.js`）、Chart.js（`import/chart.js` 二次封装）
-- **配置持久化**：`electron-store`（设置页）
-- **自动更新**：`electron-updater`（构建期，GitHub 发布渠道）
+- **图表**：Chart.js（`import/chart.js` 本地打包副本，不进 npm 依赖）
+- **配置持久化**：原生 `electron` `ipcMain` + `better-sqlite3` 设置表（无第三方状态库）
+- **自动更新**：`main.js` 通过 `axios` 直接查询 GitHub Releases（`get-app-version` / `check-update`）自实现，无 `electron-updater`
 
 ## 二、目录结构（当前真实状态）
 
@@ -64,8 +64,7 @@ FeibiJiubi/
             │   ├── modalManager.js # 弹窗管理
             │   └── syncNotification.js # 同步通知 UI
             └── import/             # 第三方库（本地打包，不进 npm 依赖）
-                ├── echarts.min.js
-                └── chart.js        # Chart.js 封装
+                └── chart.js        # Chart.js 本地打包副本
 ```
 
 > 已移除的历史模块（本文档不再描述）：`uploadData/`（数据上传）、`settings/hardwareAcceleration.js`、`settings/checkError.js`、`settings/export/exportExcel.js`、`views/modalPages/dataSyncWindow.html`。

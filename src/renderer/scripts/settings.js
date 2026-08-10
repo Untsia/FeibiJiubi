@@ -460,6 +460,12 @@
     const checkUpdateBtn = document.getElementById('check-update');
     const updateStatusEl = document.getElementById('updateStatus');
     const updateLinkEl = document.getElementById('update-link');
+    const openGithubBtn = document.getElementById('open-github');
+    if (openGithubBtn && window.electronAPI && typeof window.electronAPI.openExternal === 'function') {
+        openGithubBtn.addEventListener('click', () => {
+            window.electronAPI.openExternal('https://github.com/Untsia/FeibiJiubi');
+        });
+    }
     if (checkUpdateBtn) {
         checkUpdateBtn.addEventListener('click', async () => {
             if (updateStatusEl) updateStatusEl.textContent = '正在检查更新…';

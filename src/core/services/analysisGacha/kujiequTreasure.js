@@ -184,37 +184,6 @@ async function queryPlayerInfo(oauthCode, isGlobal) {
     throw new Error('queryPlayerInfo 返回 code=' + code + '（可能未在官方启动器登录或 token 失效）');
 }
 
-// 拉取完整账号信息（头像/昵称/等级/体力/活跃天数/通行证/宝箱），免 UID 自动定位主账号
-async function getAccountInfo(oauthCode, isGlobal) {
-    if (!oauthCode) {
-        const m = getMainAccount();
-        if (!m) throw new Error('未在 %APPDATA% 找到官方启动器登录缓存，请先在鸣潮启动器登录账号');
-        oauthCode = m.oauthCode;
-        isGlobal = m.isGlobal;
-    }
-    const info = await queryPlayerInfo(oauthCode, isGlobal);
-    const rg = regionFromKey(info.region);
-    const role = await queryRole(info.roleId, oauthCode, rg);
-    return {
-        name: role.name || info.name,
-        uid: role.uid || info.roleId,
-        level: role.level,
-        energy: role.energy,
-        maxEnergy: role.maxEnergy,
-        activeDays: role.activeDays,
-        liveness: role.liveness,
-        storeEnergy: role.storeEnergy,
-        maxStoreEnergy: role.maxStoreEnergy,
-        weekInstCount: role.weekInstCount,
-        bpLevel: role.bpLevel,
-        bpWeekExp: role.bpWeekExp,
-        bpWeekMaxExp: role.bpWeekMaxExp,
-        avatarId: info.headPhoto,
-        region: rg.key,
-        isGlobal: rg.isGlobal,
-    };
-}
-
 // 返回启动器本地缓存中的第一个登录态作为「主账号」（用于免 UID 自动同步）
 function getMainAccount() {
     const all = readLocalOauthCodes();
@@ -254,49 +223,6 @@ function sortByOauthCode(list) {
 // 缓存：playerId -> 上次成功匹配的 oauthCode，保证同一账号多次同步（奇藏/等级/刷新）命中同一登录态，不漂到别的账号
 const _treasureOauthCache = {};
 
-// 返回某 playerId 对应区服下所有启动器登录态的账号元信息（不发起网络请求），供 UI 选择框使用
-async function listTreasureAccounts(playerId, isGlobal) {
-    let region = null;
-    if (playerId) region = getRegion(playerId);
-    let codes;
-    if (region) {
-        codes = readLocalOauthCodes().filter(c => c.isGlobal === region.isGlobal);
-    } else if (isGlobal != null) {
-        codes = readLocalOauthCodes().filter(c => c.isGlobal === isGlobal);
-    } else {
-        codes = readLocalOauthCodes(); // 无 UID 时返回全部区服账号，供前端选择主账号
-    }
-    // 按 oauthCode 字典序稳定排序，保证选择框里账号顺序固定
-    const sorted = sortByOauthCode(codes);
-    const accounts = [];
-    for (const c of sorted) {
-        // 下拉框优先展示游戏内 UID（= queryRole 返回的 base.Id）；
-        // queryPlayerInfo 的 roleId 是库洛游戏通行证的 roleId，并非游戏内 UID，需再查 queryRole 取游戏内 UID。
-        // 离线或 token 失效时回退显示账号标识。
-        let uid = null;
-        try {
-            const info = await queryPlayerInfo(c.oauthCode, c.isGlobal);
-            if (info && info.roleId) {
-                uid = info.roleId; // 兜底：库洛通行证 roleId
-                try {
-                    const rg = regionFromKey(info.region);
-                    const role = await queryRole(info.roleId, c.oauthCode, rg);
-                    if (role && role.uid) uid = role.uid; // 优先：游戏内 UID
-                } catch (e) { /* 取游戏内 UID 失败时保留通行证的 roleId 兜底 */ }
-            }
-        } catch (e) { /* 离线或 token 失效时忽略，下拉框回退显示账号标识 */ }
-        accounts.push({
-            oauthCode: c.oauthCode,
-            username: c.username,
-            accountId: c.accountId,
-            maskedPhone: c.maskedPhone,
-            isGlobal: c.isGlobal,
-            regionKey: region ? region.key : (c.isGlobal ? 'Global' : 'China'),
-            uid: uid,
-        });
-    }
-    return accounts;
-}
 
 // 读取游戏本地 Client/Saved/LocalStorage/LocalStorage.db，获取当前登录账号的「游戏内 UID」与区服信息。
 // 参考 WutheringWavesTool 的 account-state 存储逻辑：用 gameRootDir 指向游戏目录，
@@ -348,6 +274,50 @@ function getGameAccountState(gameRootDir) {
   } finally {
     try { db.close(); } catch (e) {}
   }
+}
+
+// 返回某 playerId 对应区服下所有启动器登录态的账号元信息（不发起网络请求），供 UI 选择框使用
+async function listTreasureAccounts(playerId, isGlobal) {
+    let region = null;
+    if (playerId) region = getRegion(playerId);
+    let codes;
+    if (region) {
+        codes = readLocalOauthCodes().filter(c => c.isGlobal === region.isGlobal);
+    } else if (isGlobal != null) {
+        codes = readLocalOauthCodes().filter(c => c.isGlobal === isGlobal);
+    } else {
+        codes = readLocalOauthCodes(); // 无 UID 时返回全部区服账号，供前端选择主账号
+    }
+    // 按 oauthCode 字典序稳定排序，保证选择框里账号顺序固定
+    const sorted = sortByOauthCode(codes);
+    const accounts = [];
+    for (const c of sorted) {
+        // 下拉框优先展示游戏内 UID（= queryRole 返回的 base.Id）；
+        // queryPlayerInfo 的 roleId 是库洛游戏通行证的 roleId，并非游戏内 UID，需再查 queryRole 取游戏内 UID。
+        // 离线或 token 失效时回退显示账号标识。
+        let uid = null;
+        try {
+            const info = await queryPlayerInfo(c.oauthCode, c.isGlobal);
+            if (info && info.roleId) {
+                uid = info.roleId; // 兜底：库洛通行证 roleId
+                try {
+                    const rg = regionFromKey(info.region);
+                    const role = await queryRole(info.roleId, c.oauthCode, rg);
+                    if (role && role.uid) uid = role.uid; // 优先：游戏内 UID
+                } catch (e) { /* 取游戏内 UID 失败时保留通行证的 roleId 兜底 */ }
+            }
+        } catch (e) { /* 离线或 token 失效时忽略，下拉框回退显示账号标识 */ }
+        accounts.push({
+            oauthCode: c.oauthCode,
+            username: c.username,
+            accountId: c.accountId,
+            maskedPhone: c.maskedPhone,
+            isGlobal: c.isGlobal,
+            regionKey: region ? region.key : (c.isGlobal ? 'Global' : 'China'),
+            uid: uid,
+        });
+    }
+    return accounts;
 }
 
 async function getTreasureBoxes(playerId, oauthCode, isGlobal) {
@@ -413,4 +383,4 @@ async function getTreasureBoxes(playerId, oauthCode, isGlobal) {
     throw new Error(lastErr ? lastErr.message : '获取奇藏数据失败');
 }
 
-module.exports = { getTreasureBoxes, listTreasureAccounts, decodeXor5, getRegion, queryPlayerInfo, getAccountInfo, getMainAccount, getGameAccountState };
+module.exports = { getTreasureBoxes, listTreasureAccounts, decodeXor5, getRegion, queryPlayerInfo, getMainAccount, getGameAccountState };

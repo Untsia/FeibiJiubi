@@ -229,7 +229,7 @@
 }
 .stats-value {
   font-size: 19px;
-  font-weight: 800;
+  font-weight: 700;
   text-align: center;
   line-height: 1.15;
   background: linear-gradient(135deg, var(--text-strong), var(--accent-2));
@@ -585,7 +585,8 @@
 }
 
 /* 自定义下拉（UID 选择）· 统一整块面板 */
-.custom-dropdown { position: relative; width: 180px; font-family: var(--font); user-select: none; cursor: pointer; }
+.custom-dropdown { position: relative; font-family: var(--font); user-select: none; cursor: pointer; }
+#uid-dropdown { width: 170px; }
 .selected-display {
   position: relative;
   z-index: 11;
@@ -676,7 +677,10 @@
   padding: 10px 14px;
   transition: background 0.18s ease, color 0.18s ease;
   cursor: pointer;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   color: var(--text-primary);
   background-color: transparent;
   font-size: 14px;
@@ -686,8 +690,21 @@
 .dropdown-option:hover { background-color: var(--accent-soft); color: var(--accent); }
 .dropdown-option.active { font-weight: 700; color: var(--accent); background-color: var(--accent-soft); }
 
+/* 奇藏/等级选项：UID 为主、通行证标识为副行 */
+.dropdown-option .option-sub {
+  display: block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dropdown-option:hover .option-sub { color: var(--accent); }
+
 .delete-btn {
-  float: right;
+  flex-shrink: 0;
   margin-left: 10px;
   padding: 5px;
   color: white;
@@ -1054,12 +1071,12 @@ body.theme-light .analysis-tabbar {
 
 /* 左侧卡池类型筛选（并入统一卡片，用竖分隔线区隔） */
 .detail-sidebar {
-  width: 150px;
+  width: 172px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 14px 10px;
+  gap: 6px;
+  padding: 16px 12px;
   border-right: 1px solid var(--border);
   overflow-y: auto;
 }
@@ -1067,30 +1084,40 @@ body.theme-light .analysis-tabbar {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
-  padding: 2px 8px 8px;
+  padding: 2px 6px 6px;
   letter-spacing: 0.06em;
 }
 .detail-pool-btn {
   text-align: center;
-  padding: 9px 12px;
-  border: 1px solid transparent;
+  padding: 10px 10px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   border-radius: var(--radius-sm);
   font-size: 13px;
+  line-height: 1.3;
   cursor: pointer;
   transition: all 0.18s ease;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-.detail-pool-btn:hover { background: var(--surface-strong); }
+.detail-pool-btn:hover {
+  color: var(--text-primary);
+}
 .detail-pool-btn.active {
   color: #fff;
   background: var(--gradient-primary);
   border-color: transparent;
-  font-weight: 600;
   box-shadow: none;
+}
+.detail-pool-btn.active:hover {
+  border-color: transparent;
+  color: #fff;
+}
+.detail-pool-btn:active {
+  transform: none;
 }
 
 /* 右侧内容：表格 + 分页（无独立卡片，融入统一卡片） */
@@ -1136,6 +1163,7 @@ body.theme-light .analysis-tabbar {
   color: var(--text-primary);
   vertical-align: middle;
   text-align: center;
+  font-size: 14px;
   font-weight: 500;
 }
 .detail-row:last-child td { border-bottom: none; }
@@ -1656,7 +1684,7 @@ body.theme-light .level-current-row td {
 
 /* ===== 同步账号选项框：与「数据总览 / 差值对比」分属不同卡片，仅同处一行、靠右 ===== */
 .sub-view-row { display: flex; align-items: center; gap: 12px; width: 100%; }
-.account-sync-inline { width: 180px; margin-left: auto; }
+.account-sync-inline { width: 160px; margin-left: auto; }
 
 /* ====================== 骨架屏（数据重载占位） ====================== */
 /* 与卡片 Tab 等宽对齐，避免加载前后布局跳动 */

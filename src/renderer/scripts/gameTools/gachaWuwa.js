@@ -146,46 +146,6 @@ let cachedLevel = null; // 当前账号联觉等级，由 syncTreasureBoxes 填�
 let _accountState = { oauthCode: null, isGlobal: null };
 function _getSavedAccount() { try { return JSON.parse(localStorage.getItem('wuwa_account') || 'null'); } catch { return null; } }
 function _saveAccount(a) { try { localStorage.setItem('wuwa_account', JSON.stringify(a)); } catch {} }
-// 当前选中账号 uid：隐藏卡池设置按账号隔离（账号a隐藏某池，不影响账号b）
-let currentUid = null;
-function _hiddenStorageKey() {
-  return 'wuwa_hidden_pools_' + (currentUid != null ? String(currentUid) : 'default');
-}
-function _readHiddenPools() {
-  const raw = localStorage.getItem(_hiddenStorageKey());
-  if (raw != null) {
-    try { const arr = JSON.parse(raw); return new Set(Array.isArray(arr) ? arr : []); } catch (e) {}
-  }
-  // 迁移：首次使用某账号时复用旧的全局隐藏设置（仅一次），避免老用户设置丢失
-  const legacy = localStorage.getItem('wuwa_hidden_pools');
-  if (legacy != null) {
-    try {
-      const arr = JSON.parse(legacy);
-      const set = new Set(Array.isArray(arr) ? arr : []);
-      localStorage.setItem(_hiddenStorageKey(), JSON.stringify(Array.from(set)));
-      localStorage.removeItem('wuwa_hidden_pools');
-      return set;
-    } catch (e) {}
-  }
-  return new Set();
-}
-
-
-async function resolveMainAccount() {
-  try {
-    const res = await window.electronAPI.invoke('get-main-account');
-    if (res && res.success && res.account) {
-      _accountState.oauthCode = res.account.oauthCode;
-      _accountState.isGlobal = res.account.isGlobal;
-      const saved = _getSavedAccount();
-      if (saved && saved.oauthCode) {
-        _accountState.oauthCode = saved.oauthCode;
-        _accountState.isGlobal = saved.isGlobal != null ? saved.isGlobal : res.account.isGlobal;
-      }
-    }
-  } catch (e) { console.warn('resolveMainAccount 失败', e); }
-}
-
 // 下拉框显示文案：优先展示 UID（来自官方 API），离线拉不到时回退显示账号标识
 function _accountLabel(a) {
   if (a && a.uid) return String(a.uid);
@@ -255,6 +215,46 @@ async function renderAccountSwitch(containerEl, target) {
 
 function bindAccountCard() {
   renderAccountSwitch(document.getElementById('account-switch-sync'));
+}
+
+// 当前选中账号 uid：隐藏卡池设置按账号隔离（账号a隐藏某池，不影响账号b）
+let currentUid = null;
+function _hiddenStorageKey() {
+  return 'wuwa_hidden_pools_' + (currentUid != null ? String(currentUid) : 'default');
+}
+function _readHiddenPools() {
+  const raw = localStorage.getItem(_hiddenStorageKey());
+  if (raw != null) {
+    try { const arr = JSON.parse(raw); return new Set(Array.isArray(arr) ? arr : []); } catch (e) {}
+  }
+  // 迁移：首次使用某账号时复用旧的全局隐藏设置（仅一次），避免老用户设置丢失
+  const legacy = localStorage.getItem('wuwa_hidden_pools');
+  if (legacy != null) {
+    try {
+      const arr = JSON.parse(legacy);
+      const set = new Set(Array.isArray(arr) ? arr : []);
+      localStorage.setItem(_hiddenStorageKey(), JSON.stringify(Array.from(set)));
+      localStorage.removeItem('wuwa_hidden_pools');
+      return set;
+    } catch (e) {}
+  }
+  return new Set();
+}
+
+
+async function resolveMainAccount() {
+  try {
+    const res = await window.electronAPI.invoke('get-main-account');
+    if (res && res.success && res.account) {
+      _accountState.oauthCode = res.account.oauthCode;
+      _accountState.isGlobal = res.account.isGlobal;
+      const saved = _getSavedAccount();
+      if (saved && saved.oauthCode) {
+        _accountState.oauthCode = saved.oauthCode;
+        _accountState.isGlobal = saved.isGlobal != null ? saved.isGlobal : res.account.isGlobal;
+      }
+    }
+  } catch (e) { console.warn('resolveMainAccount 失败', e); }
 }
 
 async function loadGachaRecords(uid) {
@@ -415,14 +415,12 @@ async function loadGachaRecords(uid) {
     function renderDetailView() {
         const viewEl = document.getElementById('view-detail');
         const recTime = (r) => (r.time || r.timestamp || '');
-        const poolLatest = (recs) => recs.reduce((mx, r) => { const t = recTime(r); return t > mx ? t : mx; }, '');
         const hidden = getHiddenPools();
         const presentTypes = Object.keys(pools);
         const orderedTypes = GACHA_TYPE_ORDER.filter(t => presentTypes.includes(t));
         const extraTypes = presentTypes.filter(t => !GACHA_TYPE_ORDER.includes(t));
         const allPoolTypes = orderedTypes.concat(extraTypes);
-        const poolTypes = allPoolTypes.filter(t => pools[t] && pools[t].length && !hidden.has(t))
-            .sort((a, b) => poolLatest(pools[b] || []).localeCompare(poolLatest(pools[a] || [])));
+        const poolTypes = allPoolTypes.filter(t => pools[t] && pools[t].length && !hidden.has(t));
         // 全部卡池（全部数据）：始终存在，不受个体卡池隐藏影响；仅当用户显式隐藏“全部卡池”时移除
         const showSummary = !hidden.has('__SUMMARY_ALL__');
         let currentPool = showSummary ? 'all' : (poolTypes[0] || '');
@@ -714,6 +712,8 @@ async function loadGachaRecords(uid) {
     console.error('[loadGachaRecords] 渲染过程中发生未捕获异常，已降级保护：', e);
  }
 }
+
+
 
 /* ---------- 详情页 卡池内 概览/详细 子标签切换 ---------- */
 function initRecordListTabs(pool, poolSection) {
@@ -1142,11 +1142,11 @@ function renderBarView(records, pools) {
         const fourList = recs.filter(r => r.quality_level === 4);
         const fiveItemsHtmlArr = fiveList.map(r => {
             const draws = drawsToNext(recs, r, 5);
-            return buildIntuitiveCharCardHtml({ r: r, draws: draws, isDeviation: false }, 'five');
+            return buildIntuitiveCharCardHtml({ r: r, draws: draws, isDeviation: r.quality_level === 5 && (r.card_pool_type || '').startsWith('角色') && !(r.card_pool_type || '').includes('常驻') && !(r.card_pool_type || '').includes('新手') && isCommonItem(r.name, r.timestamp, commonItems) }, 'five');
         });
         const fourItemsHtmlArr = fourList.map(r => {
             const draws = drawsToNext(recs, r, 4);
-            return buildIntuitiveCharCardHtml({ r: r, draws: draws, isDeviation: false }, 'four');
+            return buildIntuitiveCharCardHtml({ r: r, draws: draws, isDeviation: r.quality_level === 5 && (r.card_pool_type || '').startsWith('角色') && !(r.card_pool_type || '').includes('常驻') && !(r.card_pool_type || '').includes('新手') && isCommonItem(r.name, r.timestamp, commonItems) }, 'four');
         });
         const charKey = 'pool_' + cat.key;
         if (!window.__intuitiveCharData) window.__intuitiveCharData = {};
@@ -1311,7 +1311,7 @@ function renderBarView(records, pools) {
                 const draws = it.draws;
                 const pct = Math.min(100, (draws / MAX_DRAW_ALL) * 100);
                 const color = getBarDrawColor(draws);
-                summaryRows += '<div class="bar-row' + (it.isDeviation ? ' deviation' : '') + '" data-time="' + (it.r.timestamp || '') + '">' +
+                summaryRows += '<div class="bar-row' + (it.isDeviation ? ' deviation' : '') + '" data-time="' + (r.timestamp || '') + '">' +
                     '<div class="bar-avatar-wrap">' + recordAvatarHtml(it.r) +
                     (it.isDeviation ? '<span class="bar-deviation-badge">歪</span>' : '') +
                     '</div><div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background:' + color + ';">' +
@@ -1411,11 +1411,11 @@ function renderIntuitiveView(records, pools) {
         const fourList = recs.filter(r => r.quality_level === 4);
         const fiveItemsHtmlArr = fiveList.map(r => {
             const draws = drawsToNext(recs, r, 5);
-            return buildIntuitiveCharCardHtml({ r: r, draws: draws, isDeviation: false }, 'five');
+            return buildIntuitiveCharCardHtml({ r: r, draws: draws, isDeviation: r.quality_level === 5 && (r.card_pool_type || '').startsWith('角色') && !(r.card_pool_type || '').includes('常驻') && !(r.card_pool_type || '').includes('新手') && isCommonItem(r.name, r.timestamp, commonItems) }, 'five');
         });
         const fourItemsHtmlArr = fourList.map(r => {
             const draws = drawsToNext(recs, r, 4);
-            return buildIntuitiveCharCardHtml({ r: r, draws: draws, isDeviation: false }, 'four');
+            return buildIntuitiveCharCardHtml({ r: r, draws: draws, isDeviation: r.quality_level === 5 && (r.card_pool_type || '').startsWith('角色') && !(r.card_pool_type || '').includes('常驻') && !(r.card_pool_type || '').includes('新手') && isCommonItem(r.name, r.timestamp, commonItems) }, 'four');
         });
         const charKey = 'pool_' + cat.key;
         if (!window.__intuitiveCharData) window.__intuitiveCharData = {};
@@ -1706,9 +1706,6 @@ function renderQizangView() {
     view.innerHTML =
       '<div class="grow-card">'
       + '<div class="grow-head"><h2 class="grow-title">奇藏 · 资源收集进度</h2>'
-      + (qizangSubMode === 'diff'
-          ? '<div class="grow-actions"></div>'
-          : '')
       + '</div>'
       + '<div class="grow-table-wrap"><table class="grow-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + totalRow + '</tbody></table></div>'
       + '<p class="grow-hint">参考 v3.5 版本全收集所需资源；「差值对比」中输入你已有的数量，自动算出还差多少箱子与星声（点击数字可在缩写 / 完整间切换）。</p>'
@@ -1749,88 +1746,6 @@ function renderQizangView() {
   render();
 }
 
-
-// 同步账号选择框：列出当前区服下所有启动器登录态，用户显式选择用哪个账号同步
-function getSelectedTreasureOauth(target) {
-  const cache = window.__treasureAccountsCache && window.__treasureAccountsCache[target];
-  const sel = window.__treasureAccountChoice && window.__treasureAccountChoice[target];
-  if (cache && sel != null && cache[sel]) return cache[sel].oauthCode;
-  return null;
-}
-
-async function renderTreasureAccountPicker(containerEl, target) {
-  if (!containerEl) return;
-  try {
-    // 清理上一次可能残留的全局「点击外部关闭」监听，避免重复绑定
-    if (window.__taDocHandler) {
-      document.removeEventListener('click', window.__taDocHandler, true);
-      window.__taDocHandler = null;
-    }
-    const uidEl = document.querySelector('.selected-display');
-    const uid = uidEl ? String(uidEl.textContent).trim() : null;
-    // 传 null 让主进程返回国服+国际服全部账号，避免按抽卡 UID 区服过滤漏掉其他区服账号
-    const res = await window.electronAPI.invoke('list-treasure-accounts', { isGlobal: null });
-    const accounts = res && res.success && res.accounts ? res.accounts : [];
-    if (!accounts.length) { containerEl.style.display = 'none'; return; }
-    if (!window.__treasureAccountsCache) window.__treasureAccountsCache = {};
-    window.__treasureAccountsCache[target] = accounts;
-    if (!window.__treasureAccountChoice) window.__treasureAccountChoice = {};
-    const prev = window.__treasureAccountChoice[target];
-
-    const display = containerEl.querySelector('.selected-display');
-    const list = containerEl.querySelector('.options-list');
-    if (!display || !list) return;
-
-    let activeIdx = (prev != null && accounts[prev]) ? parseInt(prev, 10) : 0;
-    window.__treasureAccountChoice[target] = String(activeIdx);
-
-    function accountName(a) {
-      return a.username || a.maskedPhone || a.accountId || '账号';
-    }
-    function setActive(idx) {
-      activeIdx = idx;
-      display.textContent = accountName(accounts[idx]);
-      list.querySelectorAll('.dropdown-option').forEach((it, i) => {
-        it.classList.toggle('active', i === idx);
-      });
-      window.__treasureAccountChoice[target] = String(idx);
-    }
-
-    list.innerHTML = accounts.map((a, i) => {
-      return '<li class="dropdown-option" data-idx="' + i + '">' + accountName(a) + '</li>';
-    }).join('');
-
-    setActive(activeIdx);
-
-    const closeMenu = () => {
-      list.classList.remove('show');
-      if (window.__taDocHandler) {
-        document.removeEventListener('click', window.__taDocHandler, true);
-        window.__taDocHandler = null;
-      }
-    };
-    const openMenu = () => {
-      list.classList.add('show');
-      window.__taDocHandler = (ev) => {
-        if (!containerEl.contains(ev.target)) closeMenu();
-      };
-      document.addEventListener('click', window.__taDocHandler, true);
-    };
-    display.onclick = (e) => {
-      e.stopPropagation();
-      if (list.classList.contains('show')) closeMenu(); else openMenu();
-    };
-    list.querySelectorAll('.dropdown-option').forEach((it) => {
-      it.onclick = (e) => {
-        e.stopPropagation();
-        setActive(parseInt(it.dataset.idx, 10));
-        closeMenu();
-      };
-    });
-  } catch (e) {
-    containerEl.style.display = 'none';
-  }
-}
 
 // 复用官方鸣潮启动器本地登录态，拉取当前账号奇藏数据并填充差值对比「已有」；免 UID，自动用主账号
 async function syncTreasureBoxes(target) {
@@ -1937,9 +1852,6 @@ function renderLevelView() {
     view.innerHTML =
       '<div class="grow-card">'
       + '<div class="grow-head"><h2 class="grow-title">等级 · 经验养成表</h2>'
-      + (levelSubMode === 'diff'
-          ? '<div class="grow-actions"></div>'
-          : '')
       + '</div>'
       + inputs
       + '<div class="grow-table-wrap grow-scroll"><table class="grow-table"><thead><tr>' + head + '</tr></thead><tbody class="grow-level-body">' + bodyRows() + '</tbody></table></div>'

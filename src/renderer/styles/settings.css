@@ -2,8 +2,6 @@
 
 .settings-page {
   min-height: 100%;
-  max-width: 880px;
-  margin: 0 auto;
 }
 
 .settings-page h2 {
@@ -439,3 +437,5 @@
 .settings-page .update-link:hover { background: var(--accent-soft); }
 .settings-page .update-link:active { transform: scale(0.96); }
 .settings-page .hidden { display: none !important; }
+
+
