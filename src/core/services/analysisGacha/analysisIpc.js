@@ -22,14 +22,36 @@ require('./gachaAvatarIpc'); // 角色/武器头像本地文件夹解析
 
 /**
  * 获取上次查询的玩家 UID
+ * 优先返回用户主动选择并持久化的 UID（lastSelectedUid）；
+ * 若该值缺失或已不在账号列表中，则退回数据库里最新抽卡记录对应的账号。
  */
 ipcMain.handle('get-last-query-uid', async () => {
     try {
+        const saved = await new Promise((resolve) =>
+            getSetting('lastSelectedUid', (err, v) => resolve((!err && v && v !== 'false') ? v : null)));
+        if (saved != null) {
+            const exists = await dbGet('SELECT 1 FROM gacha_logs WHERE player_id = ? LIMIT 1', [Number(saved)]);
+            if (exists) return Number(saved);
+        }
         const row = await dbGet('SELECT player_id FROM gacha_logs ORDER BY timestamp DESC LIMIT 1');
         return row ? row.player_id : null;
     } catch (err) {
         console.error('Error fetching last query UID:', err);
         return null;
+    }
+});
+
+/**
+ * 持久化用户主动选择的 UID，使程序重启后仍能恢复到上次退出的账号页面。
+ */
+ipcMain.handle('set-last-query-uid', async (event, uid) => {
+    try {
+        await new Promise((resolve, reject) =>
+            setSetting('lastSelectedUid', String(uid), (err) => err ? reject(err) : resolve()));
+        return true;
+    } catch (err) {
+        console.error('Error saving last query UID:', err);
+        return false;
     }
 });
 

@@ -13,7 +13,9 @@ function animationMessage(success, message) {
         notification.classList.add('overflow');
     }
 
-    // 添加浮窗到 body
+    // 添加浮窗到 body（先移除上一次的浮窗，避免叠加常驻）
+    const prev = document.querySelector('.notification');
+    if (prev && prev.parentNode) prev.parentNode.removeChild(prev);
     document.body.appendChild(notification);
 
     // 鼠标悬浮时显示提示，并显示复制提示
@@ -35,8 +37,15 @@ function animationMessage(success, message) {
 
     // 即时显示浮窗，无延迟
     notification.style.top = '42px';
+    notification.style.opacity = '1';
 
-    // 移除所有自动隐藏延迟：浮窗常驻直到手动关掉（点击 X 或下次同步覆盖）
+    // 自动隐藏：避免提示框一直常驻显示，3.6 秒后滑出并移除（同时防止多次同步堆叠）
+    window.__syncNotiTimer && clearTimeout(window.__syncNotiTimer);
+    window.__syncNotiTimer = setTimeout(() => {
+        notification.style.top = '-120px';
+        notification.style.opacity = '0';
+        setTimeout(() => { notification.parentNode && notification.parentNode.removeChild(notification); }, 500);
+    }, 3600);
 }
 
 function showCopyTooltip(event, copyMessage) {

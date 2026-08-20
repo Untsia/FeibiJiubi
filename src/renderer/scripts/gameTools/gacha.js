@@ -95,13 +95,17 @@ function calculateDrawsBetween(records, quality) {
     return totalDraws / qualityRecords.length;
 }
 function calculateUpAverage(records) {
+    const isLimitedPoolType = (t) => {
+        const k = t || '';
+        return (k.startsWith('角色') || k.startsWith('武器'))
+            && !k.includes('常驻') && !k.includes('新手');
+    };
     const upRecords = records.filter(
         r => r.quality_level === 5
         && !isCommonItem(r.name, r.timestamp || r.time, commonItems)
-        && (r.card_pool_type === "角色活动唤取" || r.card_pool_type === "角色联动唤取"
-            || r.card_pool_type === "角色新旅唤取" || r.card_pool_type === "角色忆旅唤取")
+        && isLimitedPoolType(r.card_pool_type)
     );
-    if (upRecords.length === 0) return "还没抽出UP";
+    if (upRecords.length === 0) return null;
     // 遍历UP角色，累加抽数
     let totalDraws = 0;
     upRecords.forEach((record, index) => {

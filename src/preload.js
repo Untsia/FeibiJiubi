@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     importGachaFromGame: () => ipcRenderer.invoke('import-gacha-from-game'),
     getGachaRecords: (playerId) => ipcRenderer.invoke('get-gacha-records', playerId),
     getLastQueryUid: () => ipcRenderer.invoke('get-last-query-uid'),
+    setLastQueryUid: (uid) => ipcRenderer.invoke('set-last-query-uid', uid),
     getPlayerUIDs: () => ipcRenderer.invoke('get-player-uids'),
     saveBackgroundSettings: (key, value) => {ipcRenderer.invoke('saveBackgroundSettings', key, value); },
     selectBackgroundFile: () => ipcRenderer.invoke('selectBackgroundFile'),

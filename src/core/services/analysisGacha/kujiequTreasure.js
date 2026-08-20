@@ -333,7 +333,9 @@ async function getTreasureBoxes(playerId, oauthCode, isGlobal) {
         const info = await queryPlayerInfo(oc, ig);
         const rg = regionFromKey(info.region);
         const r = await queryRole(info.roleId, oc, rg);
-        return buildTreasureResult(r.basicBoxes, r.phantomBoxes, r.level);
+        const ret = buildTreasureResult(r.basicBoxes, r.phantomBoxes, r.level);
+        ret.uid = r.uid != null ? String(r.uid) : null; // 回传游戏内 UID，供前端下拉框复用，避免再次在线解析偶发失败导致回退成通行证账号
+        return ret;
     }
     const region = getRegion(playerId);
     if (!region) {
@@ -343,7 +345,9 @@ async function getTreasureBoxes(playerId, oauthCode, isGlobal) {
     if (oauthCode) {
         try {
             const r = await queryRole(playerId, oauthCode, region);
-            return buildTreasureResult(r.basicBoxes, r.phantomBoxes, r.level);
+            const ret = buildTreasureResult(r.basicBoxes, r.phantomBoxes, r.level);
+            ret.uid = r.uid != null ? String(r.uid) : null; // 回传游戏内 UID，供前端下拉框复用
+            return ret;
         } catch (e) {
             throw new Error('所选账号同步失败：' + (e && e.message ? e.message : e));
         }

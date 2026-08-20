@@ -109,6 +109,8 @@ async function loadPlayerUIDs(defaultUid) {
             if (confirmed) {
                 try {
                     await window.electronAPI.invoke('delete-gacha-records', uid, 'gacha_logs');
+                    // 清除已删除账号的持久化选中，避免下次打开仍记住已不存在的账号
+                    try { await window.electronAPI.setLastQueryUid(''); } catch (e) {}
                     const lastUid = await window.electronAPI.getLastQueryUid();
                     await loadPlayerUIDs(lastUid); // 加载玩家 UID 下拉框
                     await loadGachaRecords(lastUid); // 加载对应记录
@@ -144,12 +146,20 @@ let currentAnalysisView = 'bar'; // 当前分析子视图（条形/卡片/详情
 let cachedTreasure = null; // 当前账号奇藏数据（朴素/基准/精密/辉光/潮汐绿/紫/金），由 syncTreasureBoxes 填充，用于差值对比「已有」自动显示
 let cachedLevel = null; // 当前账号联觉等级，由 syncTreasureBoxes 填充，用于等级差值对比「当前等级」自动显示（经验接口不返回，仍需手动）
 let _accountState = { oauthCode: null, isGlobal: null };
+let _resolvedUidMap = {}; // oauthCode -> 游戏内 UID，由奇藏同步实证回填，优先于下拉框在线解析
 function _getSavedAccount() { try { return JSON.parse(localStorage.getItem('wuwa_account') || 'null'); } catch { return null; } }
 function _saveAccount(a) { try { localStorage.setItem('wuwa_account', JSON.stringify(a)); } catch {} }
 // 下拉框显示文案：优先展示 UID（来自官方 API），离线拉不到时回退显示账号标识
 function _accountLabel(a) {
   if (a && a.uid) return String(a.uid);
   return (a && (a.accountId || a.maskedPhone || a.username)) || '账号';
+}
+
+// 优先用奇藏同步回填的 UID 覆盖下拉框在线解析结果（避免 token 偶发失效回退成通行证账号）
+function _effectiveUid(a) {
+  if (!a) return null;
+  if (a.oauthCode != null && _resolvedUidMap[a.oauthCode] != null) return _resolvedUidMap[a.oauthCode];
+  return a.uid != null ? String(a.uid) : null;
 }
 
 async function renderAccountSwitch(containerEl, target) {
@@ -181,8 +191,16 @@ async function renderAccountSwitch(containerEl, target) {
       const mi = accounts.findIndex(a => a.uid && String(a.uid) === String(gameState.currentUid));
       if (mi >= 0) activeIdx = mi;
     }
-    function setActive(idx) { activeIdx = idx; display.textContent = _accountLabel(accounts[idx]); list.querySelectorAll('.dropdown-option').forEach((it, i) => it.classList.toggle('active', i === idx)); }
-    list.innerHTML = accounts.map((a, i) => '<li class="dropdown-option" data-idx="' + i + '">' + _accountLabel(a) + '</li>').join('');
+    function setActive(idx) { activeIdx = idx; const a = accounts[idx]; display.textContent = _effectiveUid(a) || _accountLabel(a); list.querySelectorAll('.dropdown-option').forEach((it) => it.classList.toggle('active', Number(it.dataset.idx) === idx)); }
+    // 每个账号右侧显示解析状态标签：已解析=有游戏内 UID；未解析=仅通行证账号标识
+    let optsHtml = '';
+    accounts.forEach((a, i) => {
+      const resolved = !!_effectiveUid(a);
+      const label = _effectiveUid(a) || _accountLabel(a);
+      const badge = '<span class="option-badge ' + (resolved ? 'resolved' : 'unresolved') + '">' + (resolved ? '已解析' : '未解析') + '</span>';
+      optsHtml += '<li class="dropdown-option" data-idx="' + i + '"><span class="option-label">' + label + '</span>' + badge + '</li>';
+    });
+    list.innerHTML = optsHtml;
     setActive(activeIdx);
     // 自动选中（匹配游戏UID或第一个账号）后立即写入选中态并拉取该账号实时奇藏/等级——
     // 无需用户手动点击，启动即自动同步当前账号数据（对齐 WutheringWavesBox 体验）
@@ -373,7 +391,7 @@ async function loadGachaRecords(uid) {
         const chartId = `star-pie-chart-${poolType}`; // 动态生成唯一 ID
 
         const ratingDetails = isCharacterEvent
-            ? `
+          ? `
                 <div class="rating-detail">
                     <h3>生涯评级</h3>
                     <p>${careerRating}</p>
@@ -383,7 +401,7 @@ async function loadGachaRecords(uid) {
                     <p>${noDeviationRate || "--"}</p>
                 </div>
             `
-            : `
+          : `
                 <div class="rating-detail full">
                     <h3>生涯评级</h3>
                     <p>${careerRating}</p>
@@ -543,7 +561,7 @@ async function loadGachaRecords(uid) {
         });
         prevBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderRows(); } });
         nextBtn.addEventListener('click', () => { currentPage++; renderRows(); });
-        sizeSel.addEventListener('change', () => { pageSize = parseInt(sizeSel.value, 10); currentPage = 1; renderRows(); });
+        sizeSel.addEventListener('change', () => { pageSize = parseInt(sizeSel.value, 10); currentPage = 1; sizeSel.blur(); renderRows(); });
         // ===== 表头点击筛选：星级 / 时间自定义区间（小浮层，居中在列表头下方）=====
         const detailContent = viewEl.querySelector('.detail-content');
         const starTh = viewEl.querySelector('th[data-filter="quality"]');
@@ -617,13 +635,27 @@ async function loadGachaRecords(uid) {
         }
         function renderTimeOptions() {
             const base = currentPool === 'all'
-                ? filteredRecords.slice()
-                : filteredRecords.filter(r => r.card_pool_type === currentPool);
-            const dates = [...new Set(base.map(r => (recTime(r).split(' ')[0] || '')))].filter(Boolean).sort().reverse();
+              ? filteredRecords.slice()
+              : filteredRecords.filter(r => r.card_pool_type === currentPool);
+            // 按日期聚合：总抽数 + 当天最高稀有度（五星>四星>三星）
+            const dateMap = new Map();
+            base.forEach(r => {
+                const d = (recTime(r).split(' ')[0] || '');
+                if (!d) return;
+                if (!dateMap.has(d)) dateMap.set(d, { count: 0, maxStar: 0 });
+                const e = dateMap.get(d);
+                e.count++;
+                const star = Number(r.quality_level) || 0;
+                if (star > e.maxStar) e.maxStar = star;
+            });
+            const dates = [...dateMap.keys()].sort().reverse();
             const listEl = timePop.querySelector('#time-date-list');
-            listEl.innerHTML = dates.map(d =>
-                '<button type="button" class="dfp-option' + (timeFilter.has(d) ? ' active' : '') + '" data-date="' + d + '">' + d + '</button>'
-            ).join('') || '<div class="dfp-empty">无可用日期</div>';
+            listEl.innerHTML = dates.map(d => {
+                const e = dateMap.get(d);
+                const star = e.maxStar >= 5 ? 5 : (e.maxStar >= 4 ? 4 : 3);
+                const cls = 'dfp-option' + (timeFilter.has(d) ? ' active' : '') + ' date-star-' + star;
+                return '<button type="button" class="' + cls + '" data-date="' + d + '">' + d + ' <span class="date-count">' + e.count + '抽</span></button>';
+            }).join('') || '<div class="dfp-empty">无可用日期</div>';
             timeTh.classList.toggle('filtered', timeFilter.size > 0);
         }
 
@@ -781,6 +813,9 @@ async function gachaWuwaInit() {
 
             // 收起下拉列表
             document.querySelector('.options-list').classList.remove('show');
+
+            // 持久化用户主动选择的 UID，重启后恢复到此账号
+            try { await window.electronAPI.setLastQueryUid(selectedUid); } catch (e) {}
 
             // 加载对应的抽卡记录
             await loadGachaRecords(selectedUid);
@@ -1062,15 +1097,7 @@ function renderBarView(records, pools) {
         '角色新旅唤取', '武器新旅唤取', '角色忆旅唤取', '武器忆旅唤取', '角色常驻唤取', '武器常驻唤取',
         '新手限定唤取', '新手自选唤取', '感恩定向唤取'
     ];
-    const titleMap = {
-        '角色活动唤取': '角色活动', '武器活动唤取': '武器活动',
-        '角色联动唤取': '角色联动', '武器联动唤取': '武器联动',
-        '角色新旅唤取': '角色新旅', '武器新旅唤取': '武器新旅',
-        '角色忆旅唤取': '角色忆旅', '武器忆旅唤取': '武器忆旅',
-        '角色常驻唤取': '角色常驻', '武器常驻唤取': '武器常驻',
-        '新手限定唤取': '新手限定', '新手自选唤取': '新手自选', '感恩定向唤取': '感恩定向'
-    };
-    const cats = POOL_ORDER.filter(k => pools[k] && pools[k].length).map(k => ({ key: k, title: titleMap[k] || k }));
+    const cats = POOL_ORDER.filter(k => pools[k] && pools[k].length).map(k => ({ key: k, title: k }));
     const view = document.getElementById('view-bar');
     if (!view) return;
     view.innerHTML = '';
@@ -1098,6 +1125,8 @@ function renderBarView(records, pools) {
         const total = recs.length;
         if (!total) return;
         const isCharLimited = cat.key.startsWith('角色') && !cat.key.includes('常驻') && !cat.key.includes('新手');
+        const isWeaponLimited = cat.key.startsWith('武器') && !cat.key.includes('常驻') && !cat.key.includes('新手');
+        const isLimitedPool = isCharLimited || isWeaponLimited;
         const five = recs.filter(r => r.quality_level === 5).length;
         const four = recs.filter(r => r.quality_level === 4).length;
         const fiveRate = total ? ((five / total * 100).toFixed(2)) : '—';
@@ -1105,8 +1134,8 @@ function renderBarView(records, pools) {
         const currentPity = calculateLastDraws(recs, 5);
         const fiveAvgRaw = total ? calculateDrawsBetween(recs, 5) : null;
         const fiveAvg = (typeof fiveAvgRaw === 'number' && !isNaN(fiveAvgRaw)) ? String(fiveAvgRaw.toFixed(2)) : '—';
-        const avgLimitedRaw = isCharLimited ? calculateUpAverage(recs) : null;
-        const avgLimited = (typeof avgLimitedRaw === 'number' && !isNaN(avgLimitedRaw)) ? String(avgLimitedRaw.toFixed(2)) : '—';
+        const avgLimitedRaw = isLimitedPool ? calculateUpAverage(recs) : null;
+        const avgLimited = (typeof avgLimitedRaw === 'number' && !isNaN(avgLimitedRaw)) ? String(avgLimitedRaw.toFixed(2)) : (typeof avgLimitedRaw === 'string' ? avgLimitedRaw : '—');
         let noDeviation = '—';
         if (isCharLimited) { const _nd = calculateNoDeviationRate(recs); if (_nd) noDeviation = _nd; }
         let dateRange = '暂无';
@@ -1115,14 +1144,24 @@ function renderBarView(records, pools) {
 
         const statDefs = [
             { key: 'pity', label: '当前已垫', value: currentPity, cls: 'st-pity' },
-            { key: 'nodev', label: '不歪概率', value: noDeviation, cls: 'st-nodev' },
-            { key: 'avglimited', label: '平均限定', value: avgLimited, cls: 'st-avglimited' },
-            { key: 'avgfive', label: '平均五星', value: fiveAvg, cls: 'st-avgfive' },
+            { key: 'nodev', label: '不歪概率', value: noDeviation, cls: 'st-nodev' }
+        ];
+        // 角色池额外显示「平均限定」卡片（与平均五星并列）
+        if (cat.key.startsWith('角色')) {
+            statDefs.push({ key: 'avglimited', label: '平均限定', value: avgLimited, cls: 'st-avglimited' });
+        }
+        // 八宫格末项：除「常驻武器」算平均五星外，其余武器池（活动/联动/新旅/忆旅/新手武器）均算平均限定；角色池算平均五星
+        statDefs.push(
+            (cat.key.startsWith('武器') && !cat.key.includes('常驻'))
+                ? { key: 'avglimited', label: '平均限定', value: avgLimited, cls: 'st-avgfive' }
+                : { key: 'avgfive', label: '平均五星', value: fiveAvg, cls: 'st-avgfive' }
+        );
+        statDefs.push(
             { key: 'five', label: '五星总数', value: five, cls: 'st-five' },
             { key: 'four', label: '四星总数', value: four, cls: 'st-four' },
             { key: 'fiverate', label: '五星出率', value: fiveRate, cls: 'st-avgfive' },
             { key: 'fourrate', label: '四星出率', value: fourRate, cls: 'st-avglimited' }
-        ];
+        );
         const miniHtml = buildMiniGridHtml(statDefs);
 
         const fiveList = recs.filter(r => r.quality_level === 5);
@@ -1163,9 +1202,8 @@ function renderBarView(records, pools) {
                         <span class="bar-pity-badge">垫</span>
                     </div>
                     <div class="bar-track">
-                        <div class="bar-fill" style="width: ${pct}%; background: ${color};">
-                                <span class="bar-fill-text">${currentPity}抽</span>
-                        </div>
+                        <div class="bar-fill" style="width: ${pct}%; background: ${color};"></div>
+                        <span class="bar-fill-text"><span class="bar-draws-num">${currentPity}</span>抽</span>
                     </div>
                 </div>
             `);
@@ -1186,9 +1224,8 @@ function renderBarView(records, pools) {
                     ${isDeviation ? '<span class="bar-deviation-badge">歪</span>' : ''}
                 </div>
                 <div class="bar-track">
-                    <div class="bar-fill" style="width: ${pct}%; background: ${color};">
-                        <span class="bar-fill-text">${draws}抽</span>
-                    </div>
+                    <div class="bar-fill" style="width: ${pct}%; background: ${color};"></div>
+                    <span class="bar-fill-text"><span class="bar-draws-num">${draws}</span>抽</span>
                 </div>
             `;
             rowsContainer.appendChild(row);
@@ -1236,26 +1273,26 @@ function renderBarView(records, pools) {
             allFive += recs.filter(r => r.quality_level === 5).length;
             allFour += recs.filter(r => r.quality_level === 4).length;
             const isCharLimited = cat.key.startsWith('角色') && !cat.key.includes('常驻') && !cat.key.includes('新手');
+            const isWeaponLimited = cat.key.startsWith('武器') && !cat.key.includes('常驻') && !cat.key.includes('新手');
+            const isLimited = isCharLimited || isWeaponLimited;
             const isRolePool = cat.key.startsWith('角色') || cat.key.includes('新手');
-            const isWeaponStd = cat.key.startsWith('武器') && cat.key.includes('常驻');
-            allLimitedFive += (isCharLimited ? recs.filter(r => r.quality_level === 5).length : 0);
-            if (isRolePool) {
-                allStdFive += recs.filter(r => r.quality_level === 5 && isStdChar(r)).length;
-            } else if (isWeaponStd) {
-                allStdFive += recs.filter(r => r.quality_level === 5 && isStdWeapon(r)).length;
-            }
+            // 限定 = 限定池抽出的五星中「非常驻」的部分（限定池里抽到的常驻属「歪」，不计入限定）
+            allLimitedFive += (isLimited ? recs.filter(r => r.quality_level === 5 && !(isStdChar(r) || isStdWeapon(r))).length : 0);
+            // 常驻五星：命中常驻名单即计入，与卡池类型无关（任何池抽到的常驻都只算常驻）
+            allStdFive += recs.filter(r => r.quality_level === 5 && (isStdChar(r) || isStdWeapon(r))).length;
             const _total = recs.length;
             const _fa = _total ? calculateDrawsBetween(recs, 5) : null;
             if (typeof _fa === 'number' && !isNaN(_fa)) { sumFiveAvg += _fa; cntFiveAvg++; }
-            if (isCharLimited) {
+            if (isLimited) {
               const _al = calculateUpAverage(recs);
               if (typeof _al === 'number' && !isNaN(_al)) { sumAvgLimited += _al; cntAvgLimited++; }
             }
             recs.forEach(r => { if (r.timestamp) allTimes.push(r.timestamp); });
             recs.filter(r => r.quality_level === 5).forEach(r => {
                 const draws = drawsToNext(recs, r, 5);
-                const isDeviation = isCharLimited && isCommonItem(r.name, r.timestamp, commonItems);
-                allFiveItems.push({ r: r, draws: draws, isDeviation: isDeviation });
+                const isDeviation = isLimited && isCommonItem(r.name, r.timestamp, commonItems);
+                const isUp = isLimited && !(isStdChar(r) || isStdWeapon(r));
+                allFiveItems.push({ r: r, draws: draws, isDeviation: isDeviation, isUp: isUp });
             });
         });
         const avgFive = cntFiveAvg ? String((sumFiveAvg / cntFiveAvg).toFixed(2)) : '—';
@@ -1311,11 +1348,11 @@ function renderBarView(records, pools) {
                 const draws = it.draws;
                 const pct = Math.min(100, (draws / MAX_DRAW_ALL) * 100);
                 const color = getBarDrawColor(draws);
-                summaryRows += '<div class="bar-row' + (it.isDeviation ? ' deviation' : '') + '" data-time="' + (r.timestamp || '') + '">' +
+                summaryRows += '<div class="bar-row" data-time="' + (it.r.timestamp || '') + '">' +
                     '<div class="bar-avatar-wrap">' + recordAvatarHtml(it.r) +
-                    (it.isDeviation ? '<span class="bar-deviation-badge">歪</span>' : '') +
-                    '</div><div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background:' + color + ';">' +
-                    '<span class="bar-fill-text">' + draws + '抽</span></div></div></div>';
+                    (it.isUp ? '<span class="bar-up-badge">UP</span>' : '') +
+                    '</div><div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background:' + color + ';"></div>' +
+                    '<span class="bar-fill-text"><span class="bar-draws-num">' + draws + '</span>抽</span></div></div>';
             });
             card.innerHTML = `
                 <div class="bar-pool-head">
@@ -1329,7 +1366,26 @@ function renderBarView(records, pools) {
                 <div class="bar-pool-rows">${summaryRows || '<div class="intuitive-empty">暂无记录</div>'}</div>
             `;
         } else {
-            const charListHtml = buildIntuitiveCharListHtml(allFiveItems, 'five');
+            // 全部卡池角色卡片：按角色名合并，显示个数 xN，头像只显示一个
+            const charAgg = new Map();
+            allFiveItems.forEach(it => {
+                const name = it.r.name || '未知';
+                if (!charAgg.has(name)) charAgg.set(name, { count: 0, sample: it.r, deviation: false, isUp: false });
+                const a = charAgg.get(name);
+                a.count++;
+                if (it.isDeviation) a.deviation = true;
+                if (it.isUp) a.isUp = true;
+            });
+            const aggArr = Array.from(charAgg.values());
+            aggArr.sort((x, y) => y.count - x.count || (x.sample.name || '').localeCompare(y.sample.name || ''));
+            const charListHtml = aggArr.length ? aggArr.map(a => {
+                return '<div class="intuitive-char-card quality-5" data-time="">' +
+                    '<div class="char-avatar-wrap">' + recordAvatarHtml(a.sample) +
+                    (a.isUp ? '<span class="char-up-badge">UP</span>' : '') +
+                    '</div>' +
+                    '<span class="intuitive-char-name">' + escapeHtml(a.sample.name || '未知') + '</span>' +
+                    '<span class="intuitive-char-draws">×' + a.count + '</span></div>';
+            }).join('') : '<div class="intuitive-empty">暂无五星</div>';
             card.innerHTML = `
                 <div class="intuitive-card-head">
                     <div class="intuitive-head-left">
@@ -1382,6 +1438,8 @@ function renderIntuitiveView(records, pools) {
         const total = recs.length;
         if (!total) return;
         const isCharLimited = cat.key.startsWith('角色') && !cat.key.includes('常驻') && !cat.key.includes('新手');
+        const isWeaponLimited = cat.key.startsWith('武器') && !cat.key.includes('常驻') && !cat.key.includes('新手');
+        const isLimitedPool = isCharLimited || isWeaponLimited;
         const five = recs.filter(r => r.quality_level === 5).length;
         const four = recs.filter(r => r.quality_level === 4).length;
         const fiveRate = total ? ((five / total * 100).toFixed(2)) : '—';
@@ -1389,8 +1447,8 @@ function renderIntuitiveView(records, pools) {
         const currentPity = calculateLastDraws(recs, 5);
         const fiveAvgRaw = total ? calculateDrawsBetween(recs, 5) : null;
         const fiveAvg = (typeof fiveAvgRaw === 'number' && !isNaN(fiveAvgRaw)) ? String(fiveAvgRaw.toFixed(2)) : '—';
-        const avgLimitedRaw = isCharLimited ? calculateUpAverage(recs) : null;
-        const avgLimited = (typeof avgLimitedRaw === 'number' && !isNaN(avgLimitedRaw)) ? String(avgLimitedRaw.toFixed(2)) : '—';
+        const avgLimitedRaw = isLimitedPool ? calculateUpAverage(recs) : null;
+        const avgLimited = (typeof avgLimitedRaw === 'number' && !isNaN(avgLimitedRaw)) ? String(avgLimitedRaw.toFixed(2)) : (typeof avgLimitedRaw === 'string' ? avgLimitedRaw : '—');
         let noDeviation = '—';
         if (isCharLimited) { const _nd = calculateNoDeviationRate(recs); if (_nd) noDeviation = _nd; }
         let dateRange = '暂无';
@@ -1398,14 +1456,24 @@ function renderIntuitiveView(records, pools) {
         if (times.length) dateRange = (times[0] || '').split(' ')[0] + ' - ' + (times[times.length - 1] || '').split(' ')[0];
         const statDefs = [
             { key: 'pity', label: '当前已垫', value: currentPity, cls: 'st-pity' },
-            { key: 'nodev', label: '不歪概率', value: noDeviation, cls: 'st-nodev' },
-            { key: 'avglimited', label: '平均限定', value: avgLimited, cls: 'st-avglimited' },
-            { key: 'avgfive', label: '平均五星', value: fiveAvg, cls: 'st-avgfive' },
+            { key: 'nodev', label: '不歪概率', value: noDeviation, cls: 'st-nodev' }
+        ];
+        // 角色池额外显示「平均限定」卡片（与平均五星并列）
+        if (cat.key.startsWith('角色')) {
+            statDefs.push({ key: 'avglimited', label: '平均限定', value: avgLimited, cls: 'st-avglimited' });
+        }
+        // 八宫格末项：除「常驻武器」算平均五星外，其余武器池（活动/联动/新旅/忆旅/新手武器）均算平均限定；角色池算平均五星
+        statDefs.push(
+            (cat.key.startsWith('武器') && !cat.key.includes('常驻'))
+                ? { key: 'avglimited', label: '平均限定', value: avgLimited, cls: 'st-avgfive' }
+                : { key: 'avgfive', label: '平均五星', value: fiveAvg, cls: 'st-avgfive' }
+        );
+        statDefs.push(
             { key: 'five', label: '五星总数', value: five, cls: 'st-five' },
             { key: 'four', label: '四星总数', value: four, cls: 'st-four' },
             { key: 'fiverate', label: '五星出率', value: fiveRate, cls: 'st-avgfive' },
             { key: 'fourrate', label: '四星出率', value: fourRate, cls: 'st-avglimited' }
-        ];
+        );
         const miniHtml = buildMiniGridHtml(statDefs);
         const fiveList = recs.filter(r => r.quality_level === 5);
         const fourList = recs.filter(r => r.quality_level === 4);
@@ -1419,6 +1487,14 @@ function renderIntuitiveView(records, pools) {
         });
         const charKey = 'pool_' + cat.key;
         if (!window.__intuitiveCharData) window.__intuitiveCharData = {};
+        if (currentPity > 0) {
+          const pityCardHtml = '<div class="intuitive-char-card quality-5" data-time="">' +
+            '<div class="char-avatar-wrap">' + recordAvatarHtml({ name: '漂泊者·导电', quality_level: 5, resource_id: '' }) +
+            '<span class="char-pity-badge">垫</span></div>' +
+            '<span class="intuitive-char-name">漂泊者</span>' +
+            '<span class="intuitive-char-draws">' + currentPity + '抽</span></div>';
+          fiveItemsHtmlArr.unshift(pityCardHtml);
+        }
         window.__intuitiveCharData[charKey] = { five: fiveItemsHtmlArr, four: fourItemsHtmlArr, filter: 'five' };
         const fiveHtml = fiveItemsHtmlArr.length ? fiveItemsHtmlArr.join('') : '<div class="intuitive-empty">暂无五星</div>';
         const card = document.createElement('div');
@@ -1514,7 +1590,7 @@ function renderTableView(records) {
     view.querySelector('#table-prev').addEventListener('click', () => { tableState.page = Math.max(1, tableState.page - 1); renderTablePage(); });
     view.querySelector('#table-next').addEventListener('click', () => { tableState.page = Math.min(tableState.totalPages, tableState.page + 1); renderTablePage(); });
     view.querySelector('#table-last').addEventListener('click', () => { tableState.page = tableState.totalPages; renderTablePage(); });
-    view.querySelector('#table-page-size').addEventListener('change', (e) => { tableState.pageSize = parseInt(e.target.value, 10); tableState.page = 1; renderTablePage(); });
+    view.querySelector('#table-page-size').addEventListener('change', (e) => { tableState.pageSize = parseInt(e.target.value, 10); tableState.page = 1; e.target.blur(); renderTablePage(); });
 
     renderTablePage(records);
 }
@@ -1677,10 +1753,10 @@ function renderQizangView() {
     const head = qizangSubMode === 'overview'
       ? '<th>名称</th><th>参考数量</th><th>单个星声</th><th>合计星声</th>'
       : '<th>名称</th><th>已有</th><th>缺少</th><th>星声差</th>';
+    // 用户已操作过该输入框（含清空成空串）一律按输入解析：空串 → 0；未操作过则回退同步值 / 0
     const effUser = (d) => {
       const raw = userInputs[d.name];
-      const fromInput = (raw !== undefined && raw !== null && String(raw).trim() !== '') ? Math.max(0, parseInt(raw, 10) || 0) : null;
-      if (fromInput != null) return fromInput;
+      if (raw !== undefined && raw !== null) return Math.max(0, parseInt(raw, 10) || 0);
       const synced = cachedTreasure && cachedTreasure[d.name] != null ? cachedTreasure[d.name] : null;
       return synced != null ? synced : 0;
     };
@@ -1690,9 +1766,9 @@ function renderQizangView() {
       }
       const user = effUser(d);
       const lack = Math.max(0, d.count - user);
-      const stars = lack * d.unit;
+      const stars = Math.max(0, d.count - user) * d.unit;
       return '<tr><td class="grow-name">' + d.name + '</td>'
-        + '<td><input class="grow-input" type="number" min="0" data-name="' + d.name + '" value="' + user + '" /></td>'
+        + '<td><input class="grow-input" type="number" min="0" max="999999" maxlength="6" inputmode="numeric" data-name="' + d.name + '" value="' + (user || '') + '" /></td>'
         + '<td class="grow-qty cell-lack">' + lack + '</td>'
         + numCell(stars) + '</tr>';
     }).join('');
@@ -1700,7 +1776,9 @@ function renderQizangView() {
       ? '<tr class="grow-total-row"><td>合计</td><td>' + totalCount + '</td><td class="grow-dash">—</td>' + numCell(totalStars) + '</tr>'
       : (function () {
           let su = 0, sl = 0, ss = 0;
-          DATA.forEach(d => { const u = effUser(d); const l = Math.max(0, d.count - u); su += u; sl += l; ss += l * d.unit; });
+          DATA.forEach(d => {
+            const u = effUser(d); const l = Math.max(0, d.count - u); su += u; sl += l; ss += l * d.unit;
+          });
           return '<tr class="grow-total-row"><td>合计</td><td>' + su + '</td><td>' + sl + '</td>' + numCell(ss) + '</tr>';
         })();
     view.innerHTML =
@@ -1714,11 +1792,14 @@ function renderQizangView() {
     if (qizangSubMode === 'diff') {
       view.querySelectorAll('.grow-input').forEach(inp => {
         inp.addEventListener('input', () => {
+          // 仅允许纯数字、最多 6 位（已有输入框）
+          inp.value = inp.value.replace(/\D/g, '').slice(0, 6);
           userInputs[inp.dataset.name] = inp.value;
           const d = DATA.find(x => x.name === inp.dataset.name);
-          const user = Math.max(0, parseInt(inp.value || '0', 10) || 0);
+          // 清空输入框（空串）→ 已有按 0 计算，缺少/星声差按满额显示，不再显示空白占位（—）
+          const user = Math.max(0, parseInt(inp.value, 10) || 0);
           const lack = Math.max(0, d.count - user);
-          const stars = lack * d.unit;
+          const stars = Math.max(0, d.count - user) * d.unit;
           const tr = inp.closest('tr');
           tr.querySelector('.cell-lack').textContent = lack;
           const tc = tr.querySelector('.grow-num');
@@ -1763,6 +1844,7 @@ async function syncTreasureBoxes(target) {
       return { success: false, error: msg };
     }
     cachedTreasure = res.boxes || {};
+    if (res.uid != null) _resolvedUidMap[oauthCode] = String(res.uid); // 回填已解析 UID，供下拉框复用
     if (res.level != null) cachedLevel = res.level;
     if (typeof window.__renderQizang === 'function') window.__renderQizang();
     if (typeof window.__renderLevel === 'function') window.__renderLevel();
@@ -1844,7 +1926,7 @@ function renderLevelView() {
       ? '<th>等级</th><th>下级所需</th><th>累计经验</th><th>满级还需</th>'
       : '<th>等级</th><th>累计经验</th><th>满级还需</th><th>距此等级</th>';
     const inputs = levelSubMode === 'diff'
-      ? '<div class="grow-inputs">'
+      ? '<div class="grow-inputs grow-inputs-inline">'
         + '<label class="grow-field">当前等级<input class="grow-input" type="number" min="1" max="80" id="lvl-input" value="' + (userLevel !== '' ? userLevel : (cachedLevel != null ? cachedLevel : '')) + '" placeholder="1-80" /></label>'
         + '<label class="grow-field">当前经验<input class="grow-input" type="number" min="0" id="exp-input" value="' + (userExp || '') + '" placeholder="0" /></label>'
         + '</div>'
@@ -1852,8 +1934,8 @@ function renderLevelView() {
     view.innerHTML =
       '<div class="grow-card">'
       + '<div class="grow-head"><h2 class="grow-title">等级 · 经验养成表</h2>'
-      + '</div>'
       + inputs
+      + '</div>'
       + '<div class="grow-table-wrap grow-scroll"><table class="grow-table"><thead><tr>' + head + '</tr></thead><tbody class="grow-level-body">' + bodyRows() + '</tbody></table></div>'
       + '<p class="grow-hint">鸣潮 1-80 级角色养成经验参考；「差值对比」中输入当前等级与经验，自动高亮当前等级并算出到各等级还差多少经验（点击数字可切换缩写 / 完整）。</p>'
       + '</div>';
@@ -1946,6 +2028,3 @@ function getBarDrawColor(draws) {
   if (draws <= 70) return "#ffd96e"; // 黄（略淡）
   return "#ff8282"; // 红（略淡）
 }
-
-
-

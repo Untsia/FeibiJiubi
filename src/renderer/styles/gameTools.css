@@ -432,22 +432,19 @@ body { overflow: hidden; }
   width: 34px;
   height: 34px;
   padding: 0;
-  border: 1px solid var(--border);
+  border: none;
   border-radius: 50%;
-  background: var(--surface-strong);
+  background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background .2s ease, color .2s ease, transform .12s ease, border-color .2s ease, box-shadow .2s ease;
+  transition: color .2s ease;
 }
 .detail-page-btn .pg-ico { width: 18px; height: 18px; }
 .detail-page-btn:hover:not(:disabled) {
-  background: var(--accent-soft);
   color: var(--accent);
-  border-color: var(--accent);
-  box-shadow: 0 4px 12px var(--accent-soft);
 }
-.detail-page-btn:active:not(:disabled) { transform: scale(0.9); }
-.detail-page-btn:disabled { opacity: .35; cursor: not-allowed; }
+.detail-page-btn:active:not(:disabled) { transform: none; }
+.detail-page-btn:disabled { opacity: .35; cursor: default; }
 .detail-page-info {
   min-width: 58px;
   text-align: center;
@@ -483,8 +480,9 @@ body { overflow: hidden; }
 }
 .detail-page-size select:focus {
   outline: none;
-  border-color: var(--accent);
+  border: 1px solid var(--accent);
   background-color: var(--accent-soft);
+  box-shadow: none;
 }
 /* 下拉弹层（原生 option 在 Chromium 中始终不透明白底，需显式覆盖配色以防白底白字） */
 .detail-page-size select option {
