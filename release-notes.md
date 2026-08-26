@@ -24,7 +24,7 @@
 ### 其他变更
 
 * 新增运行期完整性自检模块（`src/core/security/selfcheck.js`）
-* 建立构建加固流水线：入口改为 `.build/src/main.js`，构建前清理 → 混淆 renderer/core → 将 main/preload 编译为 V8 字节码 → 翻转 Electron Fuses + asarmor 加固；新增 `bytenode` / `javascript-obfuscator` / `@electron/fuses` / `asarmor` 依赖
+* 建立构建加固流水线：入口改为 `.build/src/main.js`，构建前清理 → 混淆 renderer/core → main/preload 强混淆（selfDefending + controlFlowFlattening + stringArray rc4）→ 翻转 Electron Fuses + asarmor 加固；新增 `javascript-obfuscator` / `@electron/fuses` / `asarmor` 依赖
 * 数据库统一迁移至 `better-sqlite3`（12 → 13），移除 `sqlite3` / `ws` / `fs-extra` 等冗余依赖
 * 引入代码规范与自动格式化：新增 ESLint（`lint` / `lint:fix`）与 Prettier（`format` / `format:check`）脚本
 * 批量消除 ESLint 警告：给渲染进程跨文件共享函数/变量统一补 `/* exported */` 声明或行级豁免注释，局部 `prefer-const` 全部转 `const`，唯一一处真正死代码（`shared.js` 的 `isRolePool`）直接删除，`npm run lint` 从 30 warnings → 0 warnings 0 errors

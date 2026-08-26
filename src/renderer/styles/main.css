@@ -1,0 +1,939 @@
+/* =================================================================
+   FeibiJiubi · 极光玻璃 (Aurora Glass) 设计系统 v2
+   精致 · 通透 · 舒适 —— 所有色彩 / 圆角 / 间距 / 毛玻璃 / 渐变
+   由 token 驱动，深色为默认主题，浅色仅覆盖变量即可换肤。
+   ================================================================= */
+
+/* ----------------------- 打包字体（HarmonyOS Sans 鸿蒙，离线内嵌全套：中文/阿拉伯/英文） ----------------------- */
+/* 中文（简体）SC：Thin / Light / Regular / Medium / Bold / Black */
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  src: url("../assets/fonts/sc/HarmonyOS_Sans_SC_Thin.ttf") format("truetype");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  src: url("../assets/fonts/sc/HarmonyOS_Sans_SC_Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  src: url("../assets/fonts/sc/HarmonyOS_Sans_SC_Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  src: url("../assets/fonts/sc/HarmonyOS_Sans_SC_Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  src: url("../assets/fonts/sc/HarmonyOS_Sans_SC_Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  src: url("../assets/fonts/sc/HarmonyOS_Sans_SC_Black.ttf") format("truetype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+/* 英文 / 拉丁 HarmonyOS Sans：Thin / Light / Regular / Medium / Bold / Black */
+@font-face {
+  font-family: "HarmonyOS Sans";
+  src: url("../assets/fonts/latin/HarmonyOS_Sans_Thin.ttf") format("truetype");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans";
+  src: url("../assets/fonts/latin/HarmonyOS_Sans_Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans";
+  src: url("../assets/fonts/latin/HarmonyOS_Sans_Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans";
+  src: url("../assets/fonts/latin/HarmonyOS_Sans_Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans";
+  src: url("../assets/fonts/latin/HarmonyOS_Sans_Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans";
+  src: url("../assets/fonts/latin/HarmonyOS_Sans_Black.ttf") format("truetype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+/* 阿拉伯文 Naskh Arabic：Thin / Light / Regular / Medium / Bold / Black */
+@font-face {
+  font-family: "HarmonyOS Sans Naskh Arabic";
+  src: url("../assets/fonts/arabic/HarmonyOS_Sans_Naskh_Arabic_Thin.ttf") format("truetype");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans Naskh Arabic";
+  src: url("../assets/fonts/arabic/HarmonyOS_Sans_Naskh_Arabic_Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans Naskh Arabic";
+  src: url("../assets/fonts/arabic/HarmonyOS_Sans_Naskh_Arabic_Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans Naskh Arabic";
+  src: url("../assets/fonts/arabic/HarmonyOS_Sans_Naskh_Arabic_Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans Naskh Arabic";
+  src: url("../assets/fonts/arabic/HarmonyOS_Sans_Naskh_Arabic_Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HarmonyOS Sans Naskh Arabic";
+  src: url("../assets/fonts/arabic/HarmonyOS_Sans_Naskh_Arabic_Black.ttf") format("truetype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ----------------------- 设计 Token ----------------------- */
+:root {
+  /* 品牌主色：柔和紫罗兰渐变（冷调、通透、年轻现代）
+     ⚠️ 以下 --accent-2 / --accent-soft / --accent-glow / --accent-contrast /
+        --gradient-* 均为默认主色 #7c83ff 的静态占位值，运行时会由
+        settings.js applyAccentColor 按主色动态推导覆盖（单一事实来源）。
+        默认值须与 JS 对 #7c83ff 的推导结果一致，避免启动瞬间视觉闪动。 */
+  --accent: #7c83ff;
+  --accent-hover: #6a72f0;
+  --accent-2: rgb(171, 112, 255);      /* 渐变伴侣色（= JS 对默认主色的派生值） */
+  --accent-soft: rgba(124, 131, 255, 0.16);
+  --accent-glow: rgba(124, 131, 255, 0.35);
+  --accent-contrast: #ffffff;
+
+  /* 中性色（深色主题）—— 冷调、通透 */
+  --bg-base: #15161a;
+  --bg-elev: #1b1d22;
+  /* 深色下顶栏/侧边栏实底（比界面背景略深，形成层次） */
+  --chrome-bg: #191a1e;
+  --chrome-border: rgba(255, 255, 255, 0.06);
+  /* 扁平卡片：低饱和中性深灰，逐层提亮形成明度阶梯，去蓝紫、更耐看 */
+  --surface: #23262e;                   /* 卡片主基底 */
+  --surface-strong: #2a2e38;            /* 更强卡片 / 浮层（mini-card、下拉等） */
+  --surface-solid: #1d1f25;             /* 模态框 / 深底填充 */
+  --border: rgba(255, 255, 255, 0.09);  /* 极淡冷色边框 */
+  --border-strong: rgba(255, 255, 255, 0.15);
+
+  --text-strong: #f4f5f8;
+  --text-primary: #e3e4ea;
+  --text-secondary: #a4a9b6;
+  --text-muted: #767c8a;
+
+  /* 语义辅助色（更柔和、更耐看） */
+  --success: #34c98a;
+  --success-soft: rgba(52, 201, 138, 0.18);
+  --danger: #ff6b6b;
+  --danger-soft: rgba(255, 107, 107, 0.18);
+  --warn: #f0a64e;
+  --warn-soft: rgba(240, 166, 78, 0.16);
+
+  /* 星级语义色（数据展示） */
+  --star-five: #f3d58a;
+  --star-four: #c9b6ff;
+  --star-three: #7aa2ff;
+
+  /* 扁平实色风格：渐变变量直接取主色/柔和半透明色，不再用斜向渐变（与 JS 推导一致，避免闪动） */
+  --gradient-primary: var(--accent);
+  --gradient-soft: var(--accent-soft);
+
+  /* 圆角（更柔润、现代，保留 v2 增强） */
+  --radius-sm: 11px;
+  --radius: 15px;
+  --radius-lg: 21px;
+  --radius-xl: 27px;
+  --radius-pill: 999px;
+
+  /* 间距（8pt 留白系统，更克制、舒适） */
+  --space-1: 6px;
+  --space-2: 10px;
+  --space-3: 14px;
+  --space-4: 20px;
+  --space-5: 28px;
+  --space-6: 38px;
+
+  /* 阴影 / 毛玻璃（更弥散、更柔和，保留 v2 增强） */
+  --shadow-soft: 0 16px 48px rgba(0, 0, 0, 0.40);
+  --shadow-card: 0 6px 22px rgba(0, 0, 0, 0.26);
+  --shadow-pop: 0 10px 34px rgba(0, 0, 0, 0.34);
+  --glass-blur: 18px; /* 玻璃材质 backdrop-filter 模糊半径 */
+  --border-soft: rgba(255, 255, 255, 0.12); /* 极淡冷色边框 */
+  --input-bg: rgba(255, 255, 255, 0.06); /* 输入框/次要按钮：极淡白色叠加 */
+  --scrim: rgba(10, 11, 14, 0.58);
+
+  --font: "HarmonyOS Sans SC", "HarmonyOS Sans", "HarmonyOS Sans Naskh Arabic", "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI Variable", "Segoe UI", "PingFang SC", system-ui, -apple-system, sans-serif;
+  --font-num: "HarmonyOS Sans", "HarmonyOS Sans SC", "SF Pro Display", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* 氛围光晕（跟随主题色 --accent 派生，不再写死紫色） */
+  --glow-a: color-mix(in srgb, var(--accent) 20%, transparent);
+  --glow-b: color-mix(in srgb, var(--accent) 16%, transparent);
+  --glow-c: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* 浅色主题：仅覆盖变量（中性浅灰、低饱和不刺眼，冷蓝调转中性灰） */
+body.theme-light {
+  /* 关键：底色保持中性灰白，不引入暖黄/暖米色调，避免与紫罗兰主色、蓝色星级
+     产生冷暖冲突而显脏。只把偏蓝的边框/阴影改成中性灰，紫罗兰主色保留点缀。 */
+  --bg-base: #fafafa;
+  --bg-elev: #fafafb;
+  --surface: #ffffff;
+  --surface-strong: #ffffff;
+  --surface-solid: #f9fafb;
+  --border: rgba(60, 64, 72, 0.14);
+  --border-strong: rgba(60, 64, 72, 0.22);
+
+  --text-strong: #1c1e22;
+  --text-primary: #34373c;
+  --text-secondary: #646872;
+  --text-muted: #9398a1;
+
+  --success: #1faa73;
+  --success-soft: rgba(31, 170, 115, 0.14);
+  --danger: #e8556b;
+  --danger-soft: rgba(232, 85, 107, 0.14);
+
+  --shadow-soft: 0 18px 50px rgba(24, 28, 36, 0.10);
+  --shadow-card: 0 6px 20px rgba(24, 28, 36, 0.06);
+  --shadow-pop: 0 12px 36px rgba(24, 28, 36, 0.12);
+  --border-soft: rgba(60, 64, 72, 0.16);
+  --input-bg: rgba(0, 0, 0, 0.035); /* 浅色：极淡黑色叠加 */
+  --scrim: rgba(24, 28, 36, 0.26);
+
+  /* 氛围光晕（浅色：跟随主题色 --accent 派生，更淡更清透） */
+  --glow-a: color-mix(in srgb, var(--accent) 12%, transparent);
+  --glow-b: color-mix(in srgb, var(--accent) 10%, transparent);
+  --glow-c: color-mix(in srgb, var(--accent) 8%, transparent);
+
+  /* 顶栏 / 侧边栏：浅色下给实底，避免过透毛玻璃叠在浅灰背景上显灰脏、无层次。
+     用略亮于底色的实色，与界面背景形成干净明确的区分。 */
+  --chrome-bg: #f6f6f6;
+  --chrome-border: rgba(60, 64, 72, 0.12);
+}
+
+/* ===== 色温：冷白（body.theme-cool）=====
+   暖白为默认（无 theme-cool），冷白仅在 body 加 theme-cool 类时覆盖中性色变量。
+   浅色冷白：底色偏冷蓝灰，降低长时间观看暖白的眼部疲劳；
+   深色冷白：底色偏冷蓝黑，文字略偏冷灰。 */
+body.theme-cool {
+  --bg-base: #101218;
+  --bg-elev: #161b25;
+  --surface: #1d2230;
+  --surface-strong: #242a3a;
+  --surface-solid: #181c26;
+  --chrome-bg: #141821;
+  --chrome-border: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --text-strong: #eef0f6;
+  --text-primary: #dde0ea;
+  --text-secondary: #a0a6b8;
+  --text-muted: #71788c;
+  --shadow-soft: 0 16px 48px rgba(0, 0, 0, 0.46);
+  --shadow-card: 0 6px 22px rgba(0, 0, 0, 0.30);
+  --shadow-pop: 0 10px 34px rgba(0, 0, 0, 0.38);
+  --input-bg: rgba(180, 200, 230, 0.07); /* 冷白深色：淡冷蓝叠加 */
+  --scrim: rgba(8, 10, 14, 0.60);
+}
+body.theme-light.theme-cool {
+  --bg-base: #f4f6fa;
+  --bg-elev: #f5f7fb;
+  --surface: #f9faff;
+  --surface-strong: #f2f5fa;
+  --surface-solid: #f0f3f8;
+  --chrome-bg: #edf0f5;
+  --chrome-border: rgba(40, 48, 64, 0.12);
+  --border: rgba(40, 48, 64, 0.14);
+  --border-strong: rgba(40, 48, 64, 0.22);
+  --text-strong: #1a1e26;
+  --text-primary: #323640;
+  --text-secondary: #616878;
+  --text-muted: #919aab;
+  --shadow-soft: 0 18px 50px rgba(16, 22, 36, 0.12);
+  --shadow-card: 0 6px 20px rgba(16, 22, 36, 0.07);
+  --shadow-pop: 0 12px 36px rgba(16, 22, 36, 0.14);
+  --border-soft: rgba(40, 48, 64, 0.16);
+  --input-bg: rgba(20, 30, 50, 0.04); /* 冷白浅色：淡冷蓝叠加 */
+  --scrim: rgba(16, 22, 36, 0.28);
+}
+
+/* 有背景图时：保持扁平实色卡片（不再叠加半透明毛玻璃），避免背景图杂色透过 */
+body.has-bg-image {
+  --surface: #202329;
+  --surface-strong: #272b34;
+  --scrim: rgba(10, 11, 14, 0.68);
+}
+body.has-bg-image.theme-light {
+  /* 中性白，与无背景图时的浅色底保持一致，避免冷暖冲突 */
+  --surface: #ffffff;
+  --surface-strong: #f8f9fb;
+  --scrim: rgba(24, 28, 36, 0.34);
+}
+/* 有背景图 + 冷白深色：卡片底色偏冷蓝灰 */
+body.has-bg-image.theme-cool {
+  --surface: #1d2230;
+  --surface-strong: #242a3a;
+  --scrim: rgba(8, 10, 14, 0.68);
+}
+/* 有背景图 + 冷白浅色：卡片底色偏冷白 */
+body.has-bg-image.theme-light.theme-cool {
+  --surface: #f9faff;
+  --surface-strong: #f2f5fa;
+  --scrim: rgba(16, 22, 36, 0.34);
+}
+
+/* ===== 玻璃材质（设置-外观「玻璃材质」开关启用） =====
+   恢复「最开始」的毛玻璃：结构层与卡片直接用 backdrop-filter 对背景做
+   真实模糊（blur(var(--glass-blur)) saturate(150%)），通透有质感。
+   已知副作用：相邻多张半透明模糊卡片在部分机器上会出现卡片边缘亮/暗
+   伪影条（浅色白条、深色黑条），为 Chromium 合成层采样的固有表现，
+   按用户要求保留原始视觉效果。仅在「有背景图」时生效，避免无背景图时
+   界面被洗白、失去层次。 */
+body.glass-mode.has-bg-image {
+  --chrome-bg: rgba(21, 24, 30, 0.52);
+  --chrome-border: rgba(255, 255, 255, 0.08);
+  --surface: rgba(30, 33, 41, 0.52);
+  --surface-strong: rgba(38, 42, 51, 0.66);
+  --surface-solid: rgba(30, 33, 41, 0.80);
+  --scrim: rgba(10, 11, 14, 0.55);
+}
+body.glass-mode.has-bg-image.theme-light {
+  --chrome-bg: rgba(246, 246, 246, 0.60);
+  --chrome-border: rgba(60, 64, 72, 0.10);
+  --surface: rgba(255, 255, 255, 0.60);
+  --surface-strong: rgba(255, 255, 255, 0.74);
+  --surface-solid: rgba(255, 255, 255, 0.88);
+  --scrim: rgba(24, 28, 36, 0.30);
+}
+/* 玻璃材质 + 背景图 + 冷白深色 */
+body.glass-mode.has-bg-image.theme-cool {
+  --chrome-bg: rgba(20, 24, 33, 0.52);
+  --chrome-border: rgba(255, 255, 255, 0.08);
+  --surface: rgba(29, 34, 48, 0.52);
+  --surface-strong: rgba(36, 42, 58, 0.66);
+  --surface-solid: rgba(24, 28, 38, 0.80);
+  --scrim: rgba(8, 10, 14, 0.55);
+}
+/* 玻璃材质 + 背景图 + 冷白浅色 */
+body.glass-mode.has-bg-image.theme-light.theme-cool {
+  --chrome-bg: rgba(237, 240, 245, 0.60);
+  --chrome-border: rgba(40, 48, 64, 0.10);
+  --surface: rgba(249, 250, 255, 0.60);
+  --surface-strong: rgba(242, 245, 250, 0.74);
+  --surface-solid: rgba(240, 243, 248, 0.88);
+  --scrim: rgba(16, 22, 36, 0.30);
+}
+/* 结构层：顶栏 / 侧边栏 / 弹窗 / 设置卡片 使用真实毛玻璃模糊
+   （卡池/分析卡片的 backdrop-filter 在 gachaWuwa.css，避免重复定义） */
+body.glass-mode.has-bg-image .title-bar,
+body.glass-mode.has-bg-image .sidebar,
+body.glass-mode.has-bg-image .modal-content,
+body.glass-mode.has-bg-image .modal-content-game,
+body.glass-mode.has-bg-image .setting-card {
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+}
+/* 卡池卡片 / 分析卡片：半透明背景让模糊层透出 */
+body.glass-mode.has-bg-image .card-pool,
+body.glass-mode.has-bg-image .intuitive-card,
+body.glass-mode.has-bg-image .bar-pool-section,
+body.glass-mode.has-bg-image .grow-card {
+  background-color: var(--surface);
+}
+
+/* 主题切换瞬间：临时关闭全部过渡，避免半透明毛玻璃面板在
+   background 插值中间态呈现「闪白」（背景先变、面板过渡后补上）。
+   切换完成后由 JS 在下一帧移除本 class，不影响日常 hover 动画。 */
+body.theme-switching,
+body.theme-switching *,
+body.theme-switching *::before,
+body.theme-switching *::after {
+  transition: none !important;
+  animation-duration: 0.01s !important;
+}
+
+/* ----------------------- 基础 ----------------------- */
+html, body {
+  overflow: hidden;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.6;
+  letter-spacing: 0.2px;
+  color: var(--text-primary);
+  background-color: var(--bg-base);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.container, .title-bar { position: relative; z-index: 1; }
+
+* {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.container {
+  display: flex;
+  height: 100vh;
+}
+
+/* ----------------------- 标题栏 ----------------------- */
+.title-bar {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 46px;
+  background: var(--chrome-bg);
+  border-bottom: 1px solid var(--chrome-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 14px;
+  -webkit-app-region: drag;
+  z-index: 50;
+}
+
+/* 标题栏左侧品牌（图标 + 程序名） */
+.title-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  -webkit-app-region: drag;
+}
+.title-brand-logo {
+  width: 23px; height: 23px;
+  border-radius: 7px;
+  object-fit: cover;
+}
+.title-brand-name {
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+}
+
+.window-controls { display: flex; align-items: center; gap: 6px; }
+
+.control-button {
+  width: 34px; height: 34px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary);
+  -webkit-app-region: no-drag;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+.control-button svg { display: block; }
+.control-button:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+#close:hover { color: #fff; background: var(--danger); box-shadow: 0 0 0 1px var(--danger); }
+
+/* ----------------------- 侧边导航 ----------------------- */
+.sidebar {
+  position: relative;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  background: var(--chrome-bg);
+  border-right: 1px solid var(--chrome-border);
+  padding: var(--space-5) var(--space-3);
+  box-sizing: border-box;
+  margin-top: 46px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* 侧边栏底部操作区（主题切换 + 设置，无文字、图标在下） */
+.sidebar ul { flex: 1 1 auto; display: flex; flex-direction: column; }
+.sidebar-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-top: auto;
+  padding-top: 14px;
+}
+.sb-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  box-shadow: none;
+  filter: none;
+  transition: color 0.28s var(--ease-out), transform 0.16s var(--ease-spring);
+}
+.sb-btn .nav-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  color: inherit;
+}
+.sb-btn .nav-ico svg { width: 22px; height: 22px; display: block; color: currentColor; }
+.sb-btn:hover { color: var(--accent); filter: none; box-shadow: none; }
+.sb-btn:active { transform: none; }
+.sb-btn.sidebar-settings.active { color: var(--accent); filter: none; box-shadow: none; }
+
+/* 主题切换：根据当前 body 主题显示对应图标（深色显示太阳，浅色显示月亮） */
+.sb-btn.theme-toggle .nav-ico .ico-sun { display: block; }
+.sb-btn.theme-toggle .nav-ico .ico-moon { display: none; }
+body.theme-light .sb-btn.theme-toggle .nav-ico .ico-sun { display: none; }
+body.theme-light .sb-btn.theme-toggle .nav-ico .ico-moon { display: block; }
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar ul li,
+.nav-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 6px;
+  cursor: pointer;
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  text-align: center;
+  border: 1px solid transparent;
+  transition: background 0.28s var(--ease-out), color 0.28s var(--ease-out),
+              transform 0.16s var(--ease-spring), box-shadow 0.28s ease, border-color 0.28s ease;
+}
+
+.nav-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  flex-shrink: 0;
+  color: inherit;
+}
+.nav-ico svg { width: 22px; height: 22px; display: block; color: currentColor; }
+.nav-label { flex: 0 0 auto; min-width: 0; line-height: 1.2; }
+
+.sidebar ul li:hover,
+.nav-item:hover {
+  color: var(--accent);
+}
+
+.sidebar ul li:active,
+.nav-item:active { }
+
+.sidebar ul li.active,
+.nav-item.active {
+  color: var(--accent);
+  font-weight: 700;
+}
+.sidebar ul li.active .nav-ico,
+.nav-item.active .nav-ico { color: var(--accent); }
+
+/* ----------------------- 内容区 ----------------------- */
+.content {
+  flex: 1;
+  padding: var(--space-5) var(--space-6) var(--space-6);
+  box-sizing: border-box;
+  margin-top: 46px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+/* 通用页面头部（与分析/奇藏/等级页保持一致间距） */
+.page-head { margin: 0 0 2px; }
+.page-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--text-strong);
+}
+
+/* ----------------------- 滚动条 ----------------------- */
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); background-clip: padding-box; }
+::-webkit-scrollbar-track { background: transparent; }
+/* Firefox 一致性：标准属性，避免不同浏览器滚动条风格割裂 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+/* 玻璃材质模式：滚动条 thumb 改用柔和的半透明灰，而非纯 --border-strong，
+   避免在半透明玻璃卡片右侧形成突兀的「白色滚动条」；轨道保持透明，仍可正常滚动。 */
+body.glass-mode.has-bg-image ::-webkit-scrollbar { width: 8px; height: 8px; }
+body.glass-mode.has-bg-image ::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-muted) 38%, transparent);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+body.glass-mode.has-bg-image ::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--text-muted) 62%, transparent);
+  background-clip: padding-box;
+}
+body.glass-mode.has-bg-image * {
+  scrollbar-color: color-mix(in srgb, var(--text-muted) 38%, transparent) transparent;
+}
+
+/* ----------------------- 统一按钮系统 ----------------------- */
+button {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--accent-contrast);
+  background: var(--gradient-primary);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 10px 18px;
+  cursor: pointer;
+  box-shadow: none;
+  transition: transform 0.14s var(--ease-spring), background 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, color 0.25s ease, filter 0.25s ease;
+}
+button:hover { filter: brightness(1.06); box-shadow: none; }
+button:active { transform: scale(0.95); }
+
+/* 键盘焦点可见性：仅键盘导航（Tab）时显示描边环 */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm); }
+
+/* 次级按钮（描边 / 幽灵） */
+button.secondary {
+  background: var(--surface);
+  color: var(--accent);
+  border-color: var(--border-strong);
+  box-shadow: none;
+}
+button.secondary:hover { background: var(--accent-soft); border-color: var(--accent); filter: none; }
+
+/* 幽灵 / 文字按钮 */
+button.ghost, .btn-ghost {
+  background: transparent; color: var(--text-secondary);
+  border-color: transparent; box-shadow: none;
+}
+button.ghost:hover, .btn-ghost:hover { background: var(--surface); color: var(--text-primary); }
+
+/* ----------------------- 文本框 / 下拉 / 开关 ----------------------- */
+input[type="text"],
+input[type="password"],
+input[type="datetime-local"],
+select {
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface-strong);
+  box-shadow: 0 0 0 3px var(--accent-soft), 0 0 0 1px var(--accent) inset;
+}
+input::placeholder { color: var(--text-muted); }
+
+/* ----------------------- 模态窗口 ----------------------- */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  /* 顶部留出自定义标题栏高度，避免弹窗顶部被标题栏遮挡 */
+  padding: 48px 16px 16px;
+  box-sizing: border-box;
+  background-color: var(--scrim);
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+.modal-content {
+  width: 440px;
+  max-width: 92vw;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-solid);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.modal-header {
+  padding: 20px 26px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--text-strong);
+  font-size: 1.18em;
+  border-bottom: 1px solid var(--border);
+}
+.modal-body {
+  flex: 1;
+  padding: 22px 26px;
+  overflow-y: auto;
+  max-height: calc(86vh - 140px);
+  animation: fadeIn 0.3s ease;
+}
+.modal-footer {
+  padding: 16px 26px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  box-sizing: border-box;
+}
+
+/* ----------------------- 更新弹窗专用样式 ----------------------- */
+.update-modal-card { width: 420px; }
+.update-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.update-modal-icon { font-size: 1.1em; }
+.update-modal-body { text-align: center; }
+.update-version-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.update-badge {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.update-badge-new {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+}
+.update-arrow { color: var(--text-muted); font-size: 14px; }
+.update-modal-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+.update-modal-footer { justify-content: center; gap: 12px; }
+.modal-button {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.12s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 110px;
+}
+.modal-button:active { transform: scale(0.97); }
+.modal-button-ghost {
+  background: var(--surface);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+.modal-button-ghost:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.modal-button-primary {
+  background: var(--gradient-primary);
+  color: var(--accent-contrast);
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+.modal-button-primary:hover { filter: brightness(1.05); box-shadow: 0 6px 18px var(--accent-glow); }
+.modal-button-primary:disabled { opacity: 0.7; cursor: default; filter: none; box-shadow: none; }
+/* 别名：.primary 与 .modal-button-primary 等价，供 gameTools 等复用同一模态按钮体系 */
+.modal-button.primary { background: var(--gradient-primary); color: var(--accent-contrast); border-color: transparent; box-shadow: 0 4px 14px var(--accent-glow); }
+.modal-button.primary:hover { filter: brightness(1.05); box-shadow: 0 6px 18px var(--accent-glow); }
+.modal-button.primary:disabled { opacity: 0.7; cursor: default; filter: none; box-shadow: none; }
+
+/* 下载进度条 */
+.update-progress { margin-top: 18px; }
+.update-progress-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.update-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: var(--radius-pill);
+  background: var(--gradient-primary);
+  transition: width 0.3s ease;
+}
+.update-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+
+/* ----------------------- 全局返回按钮 ----------------------- */
+#global-back-button {
+  font-size: 18px;
+  width: 42px; height: 42px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  margin-left: 6px;
+  border-radius: var(--radius-pill);
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  -webkit-app-region: no-drag;
+  transition: background 0.25s ease, transform 0.16s var(--ease-spring), color 0.25s ease;
+}
+#global-back-button:hover { background: var(--accent-soft); color: var(--accent); }
+#global-back-button:active { transform: scale(0.9); }
+#global-back-button.hidden { opacity: 0; transform: translateX(-50px); pointer-events: none; }
+#global-back-button.visible { opacity: 1; transform: translateX(0); pointer-events: auto; }
+
+/* ----------------------- 提示浮窗 ----------------------- */
+.copy-tooltip {
+  position: absolute;
+  background-color: var(--surface-solid);
+  color: var(--text-primary);
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 10000;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+}
+.copy-tooltip.show { opacity: 1; transform: translateY(-8px); }
+.copy-tooltip.fade-out { opacity: 0; transform: translateY(0); }
+
+/* ----------------------- 动画 ----------------------- */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes slideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.clicked-effect { }
+
+/* 模态淡入淡出（已关闭动画，保留类名兼容） */
+.fade-out { }
+.fade-in { }
+
+/* 页面切换入场动画已关闭（即时显示，无延迟） */
+
+/* color-mix 不可用（更老的兼容层）：半透明 color-mix 背景会退化成完全透明，
+   这里兜底为不透明表面色，保证可读性 */
+@supports not (background: color-mix(in srgb, red 50%, blue)) {
+  .title-bar,
+  .sidebar,
+  .modal-content,
+  .modal-content-game,
+  .card-pool,
+  .intuitive-card,
+  .grow-card,
+  .bar-pool-section {
+    background-color: var(--surface-solid);
+  }
+}

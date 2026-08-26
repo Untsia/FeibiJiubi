@@ -113,18 +113,6 @@ npm start
 - 自动更新走 GitHub Releases 渠道：主进程查询仓库最新 Release，通过版本比较守卫仅在确有新版本时提示，支持增量下载 + 静默安装
 - 发布方式：为 `main` 分支打 tag 并创建 GitHub Release，上传上述产物即可
 
-### 代码签名（可选）
-
-上架应用商店需要代码签名证书，通过环境变量注入（避免私钥入库）：
-
-```powershell
-$env:CSC_LINK = "C:\path\to\your\code-signing.pfx"
-$env:CSC_KEY_PASSWORD = "your-cert-password"
-npm run build
-```
-
-> 未设置环境变量时自动跳过签名，仍可生成安装包用于本地测试。
-
 ***
 
 ## 🏗️ 技术架构

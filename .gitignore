@@ -5,12 +5,9 @@ out/
 release/
 .build/
 
-# 源码不入库（仅发布构建产物 exe，源码本地保留）
-src/
-scripts/
+# Rust 原生加固模块（含密钥签名底座，不公开）+ 编译缓存
 native/
-tests/
-# Rust 原生模块构建缓存（可再生，禁止入库）
+# 保留 native 构建缓存忽略规则（防缓存文件入库）
 native/**/target/
 
 # 日志
@@ -44,6 +41,8 @@ _*.js
 _*.txt
 _*.json
 _*.bat
+# 例外：tests/_mocks.js 是正式测试用 mock 模块（非临时脚本），必须入库，否则 npm test 无法运行
+!tests/_mocks.js
 
 # 备份文件（拆分/迁移前的残留，不入仓库）
 *.bak

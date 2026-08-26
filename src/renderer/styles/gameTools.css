@@ -1,0 +1,442 @@
+/* ===== 游戏工具页 · 基于统一设计 Token ===== */
+
+body { overflow: hidden; }
+
+/* 页面头部标题区 */
+.page-head { margin: 0 0 2px; }
+.page-title { font-size: 22px; font-weight: 700; color: var(--text-strong); letter-spacing: 0.3px; }
+
+/* 顶部输入框与按钮 */
+.tool-container {
+  padding: 0;
+  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.tool-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: nowrap;
+}
+
+/* 右侧操作按钮组 */
+.tool-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+/* 账号下拉框不被压缩，始终保持自身宽度 */
+.custom-dropdown {
+  flex-shrink: 0;
+}
+
+#uid-input {
+  width: 200px;
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+  color: var(--text-primary);
+}
+
+/* 状态提示（轻量毛玻璃药丸 + 强调点，撑满中间区域） */
+.status-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 9px 16px;
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  transition: background-color 0.3s ease;
+}
+/* 提示文字：单行显示，内容超出框时省略为 ...（框宽不变）。
+   同时作用于容器直接文本（事件用 textContent 覆盖 span 后仍需省略） */
+.status-display,
+.status-display .status-text {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.status-display::before {
+  content: "";
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.status-display:hover { background: var(--surface-strong); }
+
+/* 刷新 / 隐藏卡池 / 设置 等按钮（统一高度，与主色按钮基线一致） */
+.refresh-button {
+  height: 40px;
+  padding: 0 20px;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 88px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+/* 加载态：旋转 spinner 替代纯文字「请等待...」，给出明确操控反馈 */
+.refresh-button.is-loading {
+  cursor: progress;
+  filter: saturate(0.85) brightness(0.96);
+}
+/* 数据获取按钮改为实色主色，避免 135° 渐变在右上边缘形成紫色色块（扁平实色风格） */
+#refresh-data,
+#import-from-game {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: transparent;
+  box-shadow: none;
+}
+.refresh-button .btn-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: btnSpin 0.7s linear infinite;
+}
+@keyframes btnSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .refresh-button .btn-spinner { animation-duration: 1.4s; }
+}
+
+/* ===== 模态（游戏内弹窗） ===== */
+/* 与 main.css 的 .modal-content 统一扁平材质：同一 surface/边框/圆角体系，仅保留游戏侧头部布局差异 */
+.modal-content-game {
+  background: color-mix(in srgb, var(--surface-solid) 88%, var(--bg-base));
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  width: 400px;
+  max-width: 92vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-soft);
+  box-sizing: border-box;
+}
+.modal-header-game {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-header-game h2 { margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-strong); }
+
+.close-button {
+  background: transparent;
+  border: none;
+  padding: 2px 10px;
+  font-size: 1.35rem;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  box-shadow: none;
+  transition: color 0.25s ease, background 0.25s ease, transform 0.12s ease;
+}
+.close-button:hover { background: var(--accent-soft); color: var(--accent); filter: none; }
+.close-button:active { transform: scale(0.92); }
+
+.modal-body-game { flex: 1; overflow-y: auto; margin-bottom: 12px; }
+
+.modal-footer-game {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+/* 底部左注（已选计数）+ 右操作区：has-left 时左右分布，视觉更平衡 */
+.modal-footer-game.has-left { justify-content: space-between; }
+.modal-footnote {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+}
+.modal-footnote span { color: var(--accent); font-weight: 700; }
+.modal-foot-actions { display: flex; gap: 8px; }
+/* 游戏内模态按钮：复用 main.css 的 .modal-button 体系（基类 + .primary 变体），
+   这里仅做紧凑尺寸适配，避免同名样式与 main.css 冲突（收敛到单一按钮系统） */
+.modal-footer-game .modal-button {
+  padding: 8px 18px;
+  font-size: 0.88rem;
+  min-width: 0;
+}
+.modal-footer-game .modal-button:active { transform: scale(0.96); }
+
+/* ===== 隐藏卡池 · 重设计 ===== */
+.modal-title-group { display: flex; flex-direction: column; gap: 3px; }
+.modal-title-group h2 { font-size: 1rem; }
+.modal-subtitle { margin: 0; font-size: 0.8rem; color: var(--text-secondary); letter-spacing: 0.01em; }
+.modal-subtitle span { color: var(--accent); font-weight: 700; }
+
+/* 卡池列表：两列紧凑网格，充分利用空间、减少纵向滚动 */
+.hide-pools-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 2px;
+}
+
+/* 单条卡池行卡片：扁平实色卡片 + 右侧勾选指示器 */
+.pool-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.pool-row:hover {
+  background: var(--accent-soft);
+  border-color: var(--border-strong);
+}
+.pool-row:active { background: var(--accent-soft); }
+
+/* 左侧强调点 */
+.pool-dot {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-soft);
+}
+
+/* 卡池名称 */
+.pool-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 右侧单选指示器：外圈 16px 空心圆（2px 边框），内容盒 12px；
+   内点 8px 绝对定位 left/top:2px → 2 + 8/2 = 6，与内容盒圆心对齐，几何居中 */
+.pool-check {
+  position: relative;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.pool-check::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform-origin: center;
+  transform: scale(0);
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* 选中态：柔和强调，无需整行罩色即清晰可辨 */
+.pool-row.selected {
+  background: var(--gradient-soft);
+  border-color: var(--accent);
+  box-shadow: 0 3px 12px var(--accent-soft);
+}
+.pool-row.selected .pool-dot { background: var(--accent-contrast); box-shadow: none; }
+.pool-row.selected .pool-check {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.pool-row.selected .pool-check::after { transform: scale(1); transform-origin: center; }
+
+/* 加载器 */
+.loader {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  font-size: 15px;
+  color: var(--text-muted);
+}
+.loader.active { display: flex; }
+
+/* 全局返回按钮（游戏内） */
+#global-back-button {
+  position: absolute;
+  top: var(--space-5);
+  left: var(--space-5);
+  z-index: 10;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 50%;
+  width: 46px; height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 24px;
+  transition: transform 0.25s ease, background-color 0.25s ease, opacity 0.25s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+#global-back-button.visible { opacity: 1; pointer-events: auto; }
+#global-back-button:hover { background: var(--accent-soft); transform: scale(1.08); }
+#global-back-button:active { transform: scale(0.94); }
+
+/* 子页淡入淡出 */
+#subpage-content {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  box-sizing: border-box;
+  display: none; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+}
+#subpage-content.visible { display: block; opacity: 1; pointer-events: auto; }
+
+.fade-out { opacity: 0; pointer-events: none; transition: opacity 0.3s ease-in-out; }
+
+.hidden { opacity: 0; pointer-events: none; display: none; transition: opacity 0.3s ease-in-out; }
+.visible { opacity: 1; pointer-events: auto; display: block; transition: opacity 0.3s ease-in-out; }
+
+/* ===================== 详情页分页器（数据页面设置） ===================== */
+.detail-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: 0;
+  padding: 9px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-card);
+}
+.detail-pager-nav,
+.detail-pager-opts {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.detail-page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color .2s ease;
+}
+.detail-page-btn .pg-ico { width: 18px; height: 18px; }
+.detail-page-btn:hover:not(:disabled) {
+  color: var(--accent);
+}
+.detail-page-btn:active:not(:disabled) { transform: none; }
+.detail-page-btn:disabled { opacity: .35; cursor: default; }
+.detail-page-info {
+  min-width: 58px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .3px;
+}
+.detail-page-info b { color: var(--accent); font-weight: 700; }
+.detail-page-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.detail-page-size select {
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: var(--font);
+  font-size: 13px;
+  /* 字重 500（medium 偏细），显式声明避免被全局/继承加粗 */
+  font-weight: 500;
+  color: var(--text-primary);
+  background-color: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  cursor: pointer;
+  /* 显示框文字左对齐：原生 option 弹层在 Chromium 下无视 text-align 始终左对齐，
+     故显示框也改为左对齐，使折叠态与展开态文字对齐一致 */
+  text-align: left;
+  text-align-last: left;
+  transition: border-color .2s ease, background-color .2s ease;
+}
+.detail-page-size select:focus {
+  outline: none;
+  /* 聚焦时不把边框变成 accent 蓝：原生 select 选择/关闭后焦点仍留在元素上，
+     若设蓝色边框会一直显示。保持默认边框色，避免关闭后残留蓝边 */
+  border-color: var(--border);
+  background-color: transparent;
+  box-shadow: none;
+}
+/* 鼠标悬停/点击时边框也不变色：保持默认边框色，避免交互态出现蓝/紫边 */
+.detail-page-size select:hover {
+  border-color: var(--border);
+}
+/* 下拉弹层选项：仅统一字重/字体/对齐，背景与文字颜色交回原生默认（不覆盖） */
+.detail-page-size select option {
+  font-family: var(--font);
+  font-weight: 500;
+  text-align: left;
+}
+
+.detail-total {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.detail-total b { color: var(--text-strong); font-weight: 700; }
+
+/* 窄窗口：工具头部换行排列，避免按钮组把状态提示压没 / 溢出 */
+@media (max-width: 900px) {
+  .tool-header { flex-wrap: wrap; }
+  .status-display { flex-basis: 100%; order: 10; }
+  .tool-actions { margin-left: auto; }
+}

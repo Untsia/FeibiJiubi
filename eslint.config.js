@@ -34,9 +34,18 @@ module.exports = [
             'dist/**',
             'node_modules/**',
             'tests/**',
-            'scripts/**',
             'native/**'
         ]
+    },
+    {
+        // 构建脚本：Node + CommonJS
+        files: ['scripts/**/*.js'],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: 'commonjs',
+            globals: globals.node
+        },
+        rules: commonRules
     },
     {
         // 主进程 / 核心服务：Node + CommonJS
