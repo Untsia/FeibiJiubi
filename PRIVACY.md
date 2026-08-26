@@ -16,10 +16,11 @@
 ## 数据存储位置
 所有数据均**仅存储于您本机设备**：
 
-- 游戏唤取记录：读取您本机鸣潮客户端日志后，存入本地数据库
-  `%APPDATA%/feibijiubi/FeibiJiubi/gacha_data.db`
-- 设置项（如游戏目录、主题偏好）：同样仅存于本机
-  `%APPDATA%/feibijiubi/FeibiJiubi/neko_game.db`
+- 默认数据目录：`%APPDATA%/feibijiubi/FeibiJiubi/`
+- 可在设置页「数据目录」中**自定义存储位置**（支持一键迁移到新目录，旧目录可自动清理），多次自定义切换自动沿用最后选择的目录
+- 数据库文件：
+  - `feibijiubi.db`：设置项（游戏目录、主题偏好、账号记忆等）与同步数据
+  - `gacha_data.db`：游戏唤取记录
 
 这些数据**永远不会**离开您的设备。
 

@@ -1,0 +1,8 @@
+.build/
+dist/
+node_modules/
+tests/
+scripts/
+native/
+*.log
+package-lock.json
