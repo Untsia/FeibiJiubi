@@ -10,7 +10,7 @@
 - **图表**：内联 SVG / canvas 自绘（含迷你趋势线 sparkline），无第三方图表库
 - **配置持久化**：原生 `electron` `ipcMain` + `better-sqlite3` 设置表（自实现，无 `electron-store`）
 - **自动更新**：`main.js` 通过 `axios` 直接查询 GitHub Releases（`get-app-version` / `check-update`）自实现，无 `electron-updater`
-- **加固**：`javascript-obfuscator` 混淆 + `bytenode` 编译 V8 字节码 + Rust 原生模块（`feibijiubi_core.node`，AES 加密 / HMAC-SHA256 签名底座）
+- **加固**：`javascript-obfuscator` 混淆（main / preload 强混淆：selfDefending + controlFlowFlattening + stringArray rc4）+ Rust 原生模块（`feibijiubi_core.node`，AES 加密 / HMAC-SHA256 签名底座）
 
 ## 二、目录结构（当前真实状态）
 
@@ -21,10 +21,10 @@ FeibiJiubi/
 ├── .prettierrc.json / .prettierignore  # Prettier 格式化规则与忽略清单
 ├── README.md / LICENSE / PROJECT_STRUCTURE.md / PRIVACY.md
 ├── scripts/                     # 构建 / 加固 / 发布辅助脚本
-│   ├── build-pipeline.js        # prebuild：清理 dist → 复制源码 → 混淆 → 编译原生 → 字节码
+│   ├── build-pipeline.js        # prebuild：清理 dist → 复制源码 → 混淆 → 编译原生
 │   ├── clean-dist.js            # 构建前清理 dist/ 旧版本产物
 │   ├── obfuscate.js             # P1 混淆 renderer / core 的 JS
-│   ├── compile-bytecode.js      # P2 把 main/preload 编译为 V8 字节码 .jsc
+│   ├── debug-build.js           # DebugB/C 快速构建（分层定位混淆问题）
 │   ├── afterPack.js             # 打包后翻转 Electron Fuses + asarmor 加固 + HMAC 签名
 │   └── release-test.js          # 真机自动更新测试发布脚本
 ├── native/feibijiubi-core/      # Rust 原生模块（napi-rs）：核心算法 + 密钥签名底座
@@ -90,7 +90,7 @@ FeibiJiubi/
 2. **唤取分析**：渲染进程触发 IPC → `analysisIpc` → `gachaUtils`（读启动器本地登录态 / 唤取链接）→ 官方接口 → 缓存入库（`better-sqlite3`）
 3. **奇藏 / 等级**：`gachaWuwa.js` → `analysisIpc` → `kujiequTreasure.js`（KURO 启动器 SDK，复用本地登录态）
 4. **设置持久化**：`settings.js` ↔ `better-sqlite3` 设置表（通过 `save-setting` / load-settings 白名单通道）
-5. **构建加固**：`prebuild` → 清理旧产物 → 复制源码 → 混淆非入口 JS → 编译 Rust `.node` → main/preload 转字节码 → `electron-builder` 打包
+5. **构建加固**：`prebuild` → 清理旧产物 → 复制源码 → 混淆非入口 JS → 编译 Rust `.node` → main/preload 强混淆 → `electron-builder` 打包
 
 ## 四、测试
 
