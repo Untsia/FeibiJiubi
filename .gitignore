@@ -3,6 +3,15 @@ node_modules/
 dist/
 out/
 release/
+.build/
+
+# 源码不入库（仅发布构建产物 exe，源码本地保留）
+src/
+scripts/
+native/
+tests/
+# Rust 原生模块构建缓存（可再生，禁止入库）
+native/**/target/
 
 # 日志
 *.log
@@ -35,6 +44,9 @@ _*.js
 _*.txt
 _*.json
 _*.bat
+
+# 备份文件（拆分/迁移前的残留，不入仓库）
+*.bak
 
 # 构建日志 / 打包状态文件（非源码，本地产物）
 build_err*.txt
