@@ -19,7 +19,8 @@
     "format:check": "prettier --check \"src/**/*.{js,css,html}\"",
     "obfuscate": "node scripts/obfuscate.js",
     "prebuild": "node scripts/build-pipeline.js",
-    "build": "electron-builder",
+    "build": "electron-builder --publish never",
+    "release": "electron-builder --publish always",
     "build:insecure": "node -e \"process.env.SKIP_HARDEN='1';require('child_process').execSync('npm run build',{stdio:'inherit'})\""
   },
   "keywords": [
@@ -59,6 +60,8 @@
     "directories": {
       "output": "dist"
     },
+    "electronDist": "node_modules/electron/dist",
+    "electronVersion": "44.0.0",
     "asar": true,
     "asarUnpack": [
       "**/*.node"
@@ -75,7 +78,8 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "include": "build/installer.nsh",
-      "artifactName": "FeibiJiubi-${version}-windows-${arch}-setup.exe"
+      "artifactName": "FeibiJiubi-${version}-windows-${arch}-setup.exe",
+      "differentialPackage": false
     },
     "portable": {
       "artifactName": "FeibiJiubi-${version}-windows-${arch}-portable.exe"
@@ -84,7 +88,8 @@
       {
         "provider": "github",
         "owner": "Untsia",
-        "repo": "FeibiJiubi"
+        "repo": "FeibiJiubi",
+        "publishAutoUpdate": false
       }
     ]
   }

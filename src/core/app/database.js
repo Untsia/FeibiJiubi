@@ -114,6 +114,34 @@ function initializeDatabase() {
       ON gacha_logs (player_id, card_pool_type);
   `);
 
+  // 数据完整性自愈（历史缺陷处理）：
+  // 早期 getLatestTimestampsForPlayer / deleteUID 用 Number(playerId) 绑定 TEXT 列，
+  // SQLite 类型比较（INTEGER < TEXT）永不相等 → 最新时间戳查不到 → 每次刷新把整池
+  // 记录当全新数据全量重插 → gacha_logs 大量重复膨胀。
+  // 修复需谨慎：gacha 记录没有唯一 ID，API 返回中「同一时间戳下同名同星级物品」可能
+  // 是真实的多次抽取（一次十连抽到两把同名 3★ 武器会返回两条相同字段的记录）。
+  // 因此绝不能按 (player_id, card_pool_type, resource_id, name, timestamp) 去重/建唯一
+  // 索引——那会把真实抽取合并吞掉（数据变少，与游戏内对不上）。
+  // 这里只做两件无害的事：
+  //  ①修正 resource_id 的 '.0' 尾缀脏数据（ResourceId 被数值化后的序列化残留）；
+  //  ②删除历史版本在建导出的唯一索引（存在则删，防止 INSERT OR REPLACE 把真实重复
+  //   记录静默合并；删除后普通写入即可保留全部真实抽取）。
+  // 重复膨胀的根因（Number 绑定）已在查询层修复，未来由增量时间戳过滤保证幂等。
+  try {
+    db2.prepare(`
+      UPDATE gacha_logs
+      SET resource_id = substr(resource_id, 1, length(resource_id) - 2)
+      WHERE resource_id GLOB '*[0-9].0'
+    `).run();
+  } catch (e) {
+    console.warn('[db] gacha_logs resource_id 修正失败（仅告警，不影响启动）：', e && e.message);
+  }
+  try {
+    db2.prepare(`DROP INDEX IF EXISTS idx_gacha_logs_dedup`).run();
+  } catch (e) {
+    console.warn('[db] gacha_logs 残留唯一索引删除失败（仅告警，不影响启动）：', e && e.message);
+  }
+
   db2.exec(`
     CREATE TABLE IF NOT EXISTS games (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

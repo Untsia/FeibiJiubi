@@ -219,8 +219,12 @@
   --glow-c: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
-/* 浅色主题：仅覆盖变量（中性浅灰、低饱和不刺眼，冷蓝调转中性灰） */
-body.theme-light {
+/* 浅色主题：仅覆盖变量（中性浅灰、低饱和不刺眼，冷蓝调转中性灰）。
+   选择器挂在 <html> 而非 <body>：首帧主题类由 index.html 头部同步脚本挂到 <html>，
+   保证首帧 CSS 变量即命中用户主题，避免「先深后浅」的启动闪黑屏。
+   切换时渲染进程会同时在 <html> 与 <body> 上维护 theme-light/theme-cool 双份类，
+   body 类用于下方 body.theme-light .xxx 后代选择器，二者保持同步。 */
+html.theme-light {
   /* 关键：底色保持中性灰白，不引入暖黄/暖米色调，避免与紫罗兰主色、蓝色星级
      产生冷暖冲突而显脏。只把偏蓝的边框/阴影改成中性灰，紫罗兰主色保留点缀。 */
   --bg-base: #fafafa;
@@ -259,11 +263,11 @@ body.theme-light {
   --chrome-border: rgba(60, 64, 72, 0.12);
 }
 
-/* ===== 色温：冷白（body.theme-cool）=====
-   暖白为默认（无 theme-cool），冷白仅在 body 加 theme-cool 类时覆盖中性色变量。
+/* ===== 色温：冷白（html.theme-cool）=====
+   暖白为默认（无 theme-cool），冷白仅在 html/body 挂 theme-cool 类时覆盖中性色变量。
    浅色冷白：底色偏冷蓝灰，降低长时间观看暖白的眼部疲劳；
    深色冷白：底色偏冷蓝黑，文字略偏冷灰。 */
-body.theme-cool {
+html.theme-cool {
   --bg-base: #101218;
   --bg-elev: #161b25;
   --surface: #1d2230;
@@ -283,7 +287,7 @@ body.theme-cool {
   --input-bg: rgba(180, 200, 230, 0.07); /* 冷白深色：淡冷蓝叠加 */
   --scrim: rgba(8, 10, 14, 0.60);
 }
-body.theme-light.theme-cool {
+html.theme-light.theme-cool {
   --bg-base: #f4f6fa;
   --bg-elev: #f5f7fb;
   --surface: #f9faff;

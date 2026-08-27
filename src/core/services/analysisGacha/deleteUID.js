@@ -5,9 +5,11 @@ const { invalidate } = require('./gachaRecordsCache');
 
 ipcMain.handle('delete-gacha-records', async (event, uid) => {
     try {
-        // player_id 列是 INTEGER，前端传入的 uid 来自 dataset 是字符串，转 Number 确保绑定匹配
-        const pid = uid != null && uid !== '' ? Number(uid) : null;
-        if (pid === null || Number.isNaN(pid)) {
+        // gacha_logs.player_id 列存的是 TEXT 字符串；若转 Number 绑定成 INTEGER，
+        // SQLite 类型比较永不相等，DELETE 匹配 0 行却仍返回「删除成功」，导致数据删不掉。
+        // 必须用 String 绑定（与 analysisIpc get-gacha-records 的处理保持一致）。
+        const pid = uid != null && uid !== '' ? String(uid) : null;
+        if (pid === null) {
             return { success: false, message: `删除失败: 无效的玩家 UID（${uid}）` };
         }
         const query = `DELETE FROM gacha_logs WHERE player_id = ?`;

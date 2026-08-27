@@ -23,13 +23,20 @@ function runClean() {
 
   for (const name of files) {
     const full = path.join(distDir, name);
-    // 当前版本的文件/目录一律保留
-    if (name.includes(version)) continue;
+    // 元数据文件一律先清理，不受版本号保护：
+    //   *.blockmap 差分包、builder-effective-config.yaml/builder-debug.yml 构建快照、
+    //   latest*.yml / latest*.yaml 更新元数据 —— 每次重写并且已禁用的生成项应当剔除
+    if (/(^|\.)latest.*\.ya?ml$/.test(name) ||
+        /^builder-.*\.ya?ml$/.test(name) ||
+        /\.blockmap$/.test(name)) {
+      toRemove.push(full);
+      continue;
+    }
     // win-unpacked 每次构建都会重建，清掉避免堆积旧解包目录
     if (name === 'win-unpacked') { toRemove.push(full); continue; }
-    // builder-debug.yml / latest.yml 等元数据每次重写，清掉无妨
-    if (/^(builder-debug\.yml|latest.*\.yml)$/.test(name)) { toRemove.push(full); continue; }
-    // 带有版本号的产品文件（旧版本）：菲比啾比 x.y.z.exe / Setup x.y.z.exe / feibijiubi-x.y.z-x64.nsis.7z / *.blockmap
+    // 当前版本的文件/目录一律保留
+    if (name.includes(version)) continue;
+    // 带有版本号的产品文件（旧版本）：菲比啾比 x.y.z.exe / Setup x.y.z.exe / feibijiubi-x.y.z-x64.nsis.7z
     if (/(菲比啾比|feibijiubi)/i.test(name) && /\d+\.\d+\.\d+/.test(name)) {
       toRemove.push(full);
       continue;
