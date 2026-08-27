@@ -158,13 +158,20 @@ async function loadBackground(mainWindow) {
             backgroundValue = `rgb(${baseRGB})`;
         }
         // 设置背景样式与主题模式（浅色模式加 theme-light 类，冷白加 theme-cool 类）
+        // 主题类同时挂到 <html>（供首帧 CSS 变量命中主题）与 <body>（后代选择器），
+        // 并把主题写入 localStorage 缓存，供 index.html 头部同步脚本在下次启动首帧恢复。
         mainWindow.webContents.executeJavaScript(`
             document.body.style.background = ${JSON.stringify(backgroundValue)};
             document.body.style.backgroundSize = "cover";
             document.body.style.backgroundRepeat = "no-repeat";
             document.body.style.backgroundPosition = "center";
+            document.documentElement.classList.toggle('theme-light', ${isLight});
+            document.documentElement.classList.toggle('theme-cool', ${isCool});
             document.body.classList.toggle('theme-light', ${isLight});
             document.body.classList.toggle('theme-cool', ${isCool});
+            try {
+                localStorage.setItem('fbi_theme', '${isLight ? 'light' : 'dark'}-${isCool ? 'cool' : 'warm'}');
+            } catch (e) {}
             ${accentJs}
         `);
     } catch (err) {

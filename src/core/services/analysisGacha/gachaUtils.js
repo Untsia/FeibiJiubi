@@ -52,6 +52,15 @@ const POOL_REQUEST_INTERVAL_MS = 350;
 const RATELIMIT_COOLDOWN_MS = 2000;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// 归一化 resource_id：API/数据库中可能存在 '21010043.0' 这类数值化序列残留。
+// 若写入时与比对时不统一，同一真实抽取会被拆成两个不同 key（‘21010043’ 与 ‘21010043.0’），
+// 导致「补齐真实重复」逻辑把已存在的记录再补插一遍，刷新一次多一条、数据与游戏内对不上。
+// 统一规则：去掉尾缀 '.0'（资源 ID 均为数字，去掉后无歧义）。
+function normalizeResourceId(id) {
+    if (id === null || id === undefined) return '';
+    return String(id).replace(/\.0$/, '');
+}
+
 /**
  * 获取所有类型的唤取记录
  * @param {object} params 查询参数（不包含 cardPoolId）
@@ -231,62 +240,23 @@ function parseGachaUrl(url) {
         recordId: getParam("record_id", "recordId") || "0",
     };
 }
-/**
- * 插入获取到的唤取记录到数据库
- * @param {object[]} logs 需要插入的唤取记录数组
- * @param playerId
- * @param event
- */
-
-// 插入获取到的唤取记录到数据库（按倒序插入）
-async function insertGachaLogs(logs, playerId, event) {
-    // 过滤掉没有时间戳的记录
+// 插入/同步唤取记录到数据库（整池对账，以本次 API 返回为权威）
+// 鸣潮记录页 API 只返回最近约 6 个月左右的记录窗口，且不会告知窗口边界。
+// 若沿用「增量 + 补齐」策略，超出窗口的历史记录会一直残留在库里，
+// 导致界面显示抽数比游戏内多（游戏内只展示窗口内记录）——这正是此前
+// “应用比游戏多 / 抽数全都对不上” 的根因。
+// 因此改为整池对账：某池本次 API 成功返回记录时，先清空该玩家该池的旧记录，
+// 再按本次返回全量重插。API 是权威源，刷新一次后界面与游戏记录页完全一致，
+// 同时自动修正历史残留问题（超出窗口的旧记录、重复膨胀、resource_id 的 '.0' 尾缀等）。
+// 注：API 返回空数组（该池无记录）时不做任何操作——无法与限流导致的假空响应区分，
+// 避免误删用户已有数据。
+async function insertOrUpdateGachaLogs(logs, playerId, event) {
+    // 过滤掉没有时间戳的记录（API 正常返回均带 time，此为防御性保护）
     const validLogs = logs.filter(record => record.time);
 
-    // 倒序插入数据（从数组最后一条记录开始插入），复用缓存的预编译语句
-    const stmt = getInsertStmt();
-    for (let i = validLogs.length - 1; i >= 0; i--) {
-        const record = validLogs[i];
-        stmt.run([
-            playerId,            // 从 params 中获取 player_id
-            record.cardPoolType, // 卡池类型名称
-            record.resourceId,   // 资源 ID
-            record.qualityLevel, // 物品质量
-            record.resourceType, // 资源类型
-            record.name,         // 物品名称
-            record.count,        // 物品数量
-            record.time          // 时间戳
-        ]);
-    }
-
-    console.log(`${validLogs.length} 条记录成功插入数据库.`);
-    const poolTypeLabel = validLogs.length > 0 ? validLogs[0].cardPoolType : '';
-    sendStatusToRenderer(event, `${poolTypeLabel}成功更新${validLogs.length}条`);
-}
-
-// 一次性拉取某玩家所有卡池的最新时间戳，避免逐个卡池的 N+1 查询
-async function getLatestTimestampsForPlayer(playerId) {
-    // player_id 列是 INTEGER，playerId 可能来自 URL 是字符串，转 Number 确保绑定匹配
-    const pid = playerId != null && playerId !== '' ? Number(playerId) : null;
-    try {
-        const rows = db.prepare(
-            'SELECT card_pool_type, MAX(timestamp) AS latestTimestamp FROM gacha_logs WHERE player_id = ? GROUP BY card_pool_type'
-        ).all(pid);
-        const map = {};
-        (rows || []).forEach(r => { map[r.card_pool_type] = r.latestTimestamp; });
-        return map; // { [cardPoolType]: latestTimestamp }
-    } catch (err) {
-        throw err;
-    }
-}
-
-// 插入数据（按倒序插入，且只插入时间戳更新的数据）
-async function insertOrUpdateGachaLogs(logs, playerId, event) {
     // 按卡池类型分组（playerId 固定）
     const groupedLogs = {};
-    let newRecordsCount = 0; // 新增记录
-
-    logs.forEach(record => {
+    validLogs.forEach(record => {
         const key = record.cardPoolType;
         if (!groupedLogs[key]) {
             groupedLogs[key] = [];
@@ -294,23 +264,42 @@ async function insertOrUpdateGachaLogs(logs, playerId, event) {
         groupedLogs[key].push(record);
     });
 
-    // 一次性查询该玩家所有卡池的最新时间戳（避免 N+1 查询）
-    const latestMap = await getLatestTimestampsForPlayer(playerId);
+    // 注意：gacha_logs.player_id 列实际存的是 TEXT（插入时绑定的是 URL 解析出的字符串）。
+    // 统一转 String 再绑定（与 analysisIpc get-gacha-records 的处理保持一致），
+    // 避免 SQLite 类型比较（INTEGER < TEXT）导致 DELETE/INSERT 匹配不到任何记录。
+    const pid = playerId != null && playerId !== '' ? String(playerId) : null;
+    let newRecordsCount = 0;
 
-    // 遍历每个卡池类型，插入时间戳更新的记录
+    const stmt = getInsertStmt();
+    const delStmt = db.prepare('DELETE FROM gacha_logs WHERE player_id = ? AND card_pool_type = ?');
+
+    // 遍历每个卡池类型：清空旧记录 → 整池重插本次 API 返回
+    // API 返回顺序为最新在前，这里按“从数组末尾往头”倒序插入，保证 id 随
+    // 时间正序递增（最早的记录 id 最小）。渲染层约定库内数据为最新在前
+    // （get-gacha-records ORDER BY timestamp/id DESC），因此插入顺序不能正着来，
+    // 否则 id 与时间反转、列表会变成旧记录在前。
     for (const [cardPoolType, groupedRecords] of Object.entries(groupedLogs)) {
-        const latestTimestamp = latestMap[cardPoolType] || null;
-
-        const validRecords = groupedRecords.filter(record => {
-            // 如果数据库中没有记录，或者时间戳更晚，则插入新记录
-            return !latestTimestamp || new Date(record.time) > new Date(latestTimestamp);
-        });
-
-        if (validRecords.length > 0) {
-            await insertGachaLogs(validRecords, playerId, event); // 批量插入符合条件的记录
-            newRecordsCount += validRecords.length;
-        }
+        db.transaction(() => {
+            delStmt.run(pid, cardPoolType);
+            for (let i = groupedRecords.length - 1; i >= 0; i--) {
+                const record = groupedRecords[i];
+                stmt.run([
+                    pid,                                      // player_id（保持 String 形态）
+                    cardPoolType,                             // 卡池类型名称
+                    normalizeResourceId(record.resourceId),   // 资源 ID（归一化去 '.0' 尾缀）
+                    record.qualityLevel,                      // 物品质量
+                    record.resourceType,                      // 资源类型
+                    record.name,                              // 物品名称
+                    record.count,                             // 物品数量
+                    record.time                               // 时间戳
+                ]);
+            }
+        })();
+        newRecordsCount += groupedRecords.length;
+        sendStatusToRenderer(event, `${cardPoolType}成功更新${groupedRecords.length}条`);
     }
+
+    if (validLogs.length > 0) console.log(`${validLogs.length} 条记录成功同步数据库.`);
     return newRecordsCount;
 }
 

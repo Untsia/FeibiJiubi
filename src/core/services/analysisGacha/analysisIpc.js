@@ -92,11 +92,14 @@ ipcMain.handle('get-gacha-records', async (event, playerId) => {
         const cacheKey = pid != null ? pid : '';
         const cached = cacheGet(cacheKey);
         if (cached !== undefined) return cached;
+        // 排序必须带 id 作为同一时间戳（十连）的稳定 tie-breaker：
+        // 仅用 timestamp DESC 时，同一秒内多条记录按 rowid 正序返回，正好与真实抽取顺序相反，
+        // 导致五星进度条/已垫抽数算错（对比备份版 ORDER BY id DESC，结果一致的正确值）。
         const sql = pid != null
-            ? 'SELECT * FROM gacha_logs WHERE player_id = ? ORDER BY id DESC'
-            : 'SELECT * FROM gacha_logs ORDER BY id DESC';
+            ? 'SELECT * FROM gacha_logs WHERE player_id = ? ORDER BY timestamp DESC, id DESC'
+            : 'SELECT * FROM gacha_logs ORDER BY timestamp DESC, id DESC';
         const params = pid != null ? [pid] : [];
-        const rows = await dbAll(sql, params); // 按插入顺序倒序获取
+        const rows = await dbAll(sql, params); // 最新在前（渲染层约定：库内倒序即最新在前，reverse 后为时间正序）
         cacheSet(cacheKey, rows);
         return rows;
     } catch (err) {

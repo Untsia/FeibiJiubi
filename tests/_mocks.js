@@ -64,6 +64,8 @@ const dbMock = {
     if (cb) cb.call(info, null);
     return info;
   },
+  // better-sqlite3 风格：db.transaction(fn)() 同步执行 fn（真实库会包事务，这里直接跑函数体）
+  transaction: (fn) => fn,
   // better-sqlite3 风格：prepare(sql).xxx(...params) 委托给对应方法。
   // 被测源码（analysisIpc.js 的 dbGet/dbAll）走同步 prepare().get()/.all()，
   // 但测试里通常用回调式覆盖 dbMock.get(sql, params, cb) => cb(null, row)。

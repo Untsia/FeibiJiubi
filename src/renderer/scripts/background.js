@@ -91,9 +91,15 @@
                 document.body.style.background = 'rgb(' + baseRGB + ')';
                 document.body.classList.remove('has-bg-image');
             }
+            // 主题类双写：<html> 供首帧 CSS（index.html 同步脚本 + 此后每次切换都同步），
+            // <body> 供 body.theme-light .xxx 后代选择器与既有读取逻辑，保持同步。
+            // 同时把主题写入 localStorage 缓存，供下次启动首帧同步脚本恢复，避免闪黑屏。
+            document.documentElement.classList.toggle('theme-light', isLight);
+            document.documentElement.classList.toggle('theme-cool', colorTemp === 'cool');
             document.body.classList.toggle('theme-light', isLight);
             document.body.classList.toggle('theme-cool', colorTemp === 'cool');
             document.body.classList.toggle('glass-mode', currentGlass());
+            try { localStorage.setItem('fbi_theme', (isLight ? 'light' : 'dark') + (colorTemp === 'cool' ? '-cool' : '-warm')); } catch (_) {}
         }).catch(function (err) {
             console.error('启动时应用背景失败:', err);
         });
@@ -124,9 +130,13 @@
             document.body.style.background = 'rgb(' + baseRGB + ')';
             document.body.classList.remove('has-bg-image');
         }
+        // 主题类双写 + 缓存（同 applyAppBackground，保持两者一致）
+        document.documentElement.classList.toggle('theme-light', isLight);
+        document.documentElement.classList.toggle('theme-cool', colorTemp === 'cool');
         document.body.classList.toggle('theme-light', isLight);
         document.body.classList.toggle('theme-cool', colorTemp === 'cool');
         document.body.classList.toggle('glass-mode', currentGlass());
+        try { localStorage.setItem('fbi_theme', (isLight ? 'light' : 'dark') + (colorTemp === 'cool' ? '-cool' : '-warm')); } catch (_) {}
     };
 
     // 亮度拖动预览专用：只更新遮罩 CSS 变量（--bg-overlay），

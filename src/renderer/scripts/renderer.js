@@ -340,7 +340,10 @@ document.addEventListener("DOMContentLoaded", () => {
             document.body.style.backgroundColor = nextIsLight
                 ? (isCool ? '#f4f6fa' : '#fafafa')
                 : (isCool ? '#101218' : '#171718');
+            // 主题类双写 + 缓存：<html> 供首帧 CSS / <body> 供后代选择器与读取逻辑
+            document.documentElement.classList.toggle('theme-light', nextIsLight);
             document.body.classList.toggle('theme-light', nextIsLight);
+            try { localStorage.setItem('fbi_theme', (nextIsLight ? 'light' : 'dark') + (isCool ? '-cool' : '-warm')); } catch (_) {}
             // 兜底：若 background.js 已就绪，复用其逻辑（背景图/遮罩等）
             if (typeof window.applyThemeVisual === 'function') {
                 window.applyThemeVisual(next, (window.__appearance && window.__appearance.backgroundImage) || '');
