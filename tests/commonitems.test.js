@@ -9,7 +9,7 @@ const { ipcHandlers } = require('./_mocks');
 // 必须在 require commonitems 之前设置数据目录（其顶层会读取该环境变量）
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'feibijiubi-common-'));
 process.env.FEIBIJIUBI_FOLDER_PATH = dataDir;
-require('../src/core/services/analysisGacha/commonitems'); // 注册 get-common-items + 初始化写文件
+require('../.build/src/main/core/services/analysisGacha/commonitems'); // 注册 get-common-items + 初始化写文件
 
 // ---------- 场景 1：首次请求自动创建默认常驻数据并返回 zh-cn 列表 ----------
 test('get-common-items 默认返回 wuWa zh-cn 常驻列表', async () => {

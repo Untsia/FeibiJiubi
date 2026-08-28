@@ -2,7 +2,7 @@ require('./_mocks');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { ipcHandlers, dbMock, mockElectron } = require('./_mocks');
-const { loadBackground } = require('../src/core/services/settings/background');
+const { loadBackground } = require('../.build/src/main/core/services/settings/background');
 
 // 捕获注入到渲染进程的 JS 字符串的辅助
 function captureLoader(settingsRows) {

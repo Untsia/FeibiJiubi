@@ -11,6 +11,29 @@
 const fs = require('fs');
 const path = require('path');
 
+// 定位可作为 Node 原生插件加载的模块路径。
+// 注意：Windows 上 cargo 的产物是 feibijiubi_core.dll，而 Node 只会把 .node 扩展名
+// 当作原生插件加载（直接 require('.dll') 会被当成 JS 解析而失败）。
+// 因此优先找现成的 .node（build-pipeline 拷贝过一份），否则把 .dll 复制成 .node。
+function resolveNativeModule() {
+  const root = path.join(__dirname, '..');
+  const releaseDir = path.join(root, 'native', 'feibijiubi-core', 'target', 'release');
+  const candidates = [
+    path.join(releaseDir, 'feibijiubi_core.node'),
+    path.join(root, '.build', 'src', 'feibijiubi_core.node'),
+  ];
+  const found = candidates.find((p) => fs.existsSync(p));
+  if (found) return found;
+
+  const dll = path.join(releaseDir, 'feibijiubi_core.dll');
+  if (fs.existsSync(dll)) {
+    const asNode = path.join(releaseDir, 'feibijiubi_core.node');
+    fs.copyFileSync(dll, asNode);
+    return asNode;
+  }
+  return null;
+}
+
 async function runAfterPack(context) {
   const { appOutDir, packager } = context;
   const appName = packager.appInfo.productFilename || '菲比啾比';
@@ -62,7 +85,11 @@ async function runAfterPack(context) {
   // ---- 3. P3 带密钥 HMAC 签名 app.asar（防篡改，密钥藏于原生模块）----
   if (fs.existsSync(asarPath)) {
     try {
-      const nativePath = path.join(__dirname, '..', 'native', 'feibijiubi-core', 'target', 'release', 'feibijiubi_core.node');
+      const nativePath = resolveNativeModule();
+      if (!nativePath) {
+        console.warn('[afterPack] HMAC 签名失败：未找到原生模块产物');
+        return;
+      }
       const native = require(nativePath);
       const data = fs.readFileSync(asarPath);
       const sig = native.hmacSha256(data);

@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { getTreasureBoxes, decodeXor5, getRegion } = require('../src/core/services/analysisGacha/kujiequTreasure');
+const { getTreasureBoxes, decodeXor5, getRegion } = require('../.build/src/main/core/services/analysisGacha/kujiequTreasure');
 const { mockAxios, mockElectron } = require('./_mocks');
 
 // ---------- 场景 1：decodeXor5 自反性（解密两次还原原文） ----------

@@ -58,17 +58,12 @@ const OBF_OPTIONS_CORE = {
 };
 
 // renderer：温和强度。必须关闭 debugProtection（避免注入 debugger 干扰 GUI 渲染）、
-// selfDefending（格式化即死循环会卡白屏），并关闭 splitStrings（防止破坏
-// background.js 中 executeJavaScript 注入 CSS 那行「不能带内层双引号」的约束）。
+// selfDefending（格式化即死循环会卡白屏），并关闭 splitStrings（防止破坏字符串字面量）。
 //
-// ⚠️ 额外关闭 transformObjectKeys：它会把视图脚本 (barView/intuitiveView/...) 内部对
-//   `window.renderXxx / renderTableView / window.gachaWuwaInit = ...` 这类「全局对象
-//   字面量 + 动态 key」写法重命名，混淆后 gameTools.js 通过 `<script src>` 顺序加载
-//   7 个 view 脚本 + gachaWuwa.js 时，renderXxx 名被改写、导致 gachaWuwaInit 拿不到
-//   视图函数、建不出 #view-intuitive 等容器 → 首页 DOM 注入了但分析卡片全没，用户体感
-//   「侧边栏有、中间仍是白的」。视图之间还有 key 为 `view-bar` / `view-intuitive`
-//   的字符串查找，transformObjectKeys 不会破坏字符串但会破坏「对象 key = 函数引用」，
-//   故对 renderer 子脚本必须关。
+// 现在 renderer/scripts 下仅剩 renderer.js（渲染进程错误回写桥：window.onerror /
+// unhandledrejection / console 劫持 → 主进程日志），无视图脚本 / gachaWuwa.js 依赖，
+// 但为保持对经典脚本的统一处理，继续沿用温和强度选项（关闭 transformObjectKeys 以
+// 避免任何「全局对象 + 动态 key」类写法被改写）。
 const OBF_OPTIONS_RENDERER = {
   compact: true,
   controlFlowFlattening: true,
@@ -116,12 +111,15 @@ function copyTree(srcDir, dstDir) {
   });
 }
 
-function obfuscateAll() {
-  if (fs.existsSync(OUT)) fs.rmSync(OUT, { recursive: true, force: true });
-  copyTree(SRC, OUT);
+function obfuscateWalkOnly() {
+  // 只混淆 .build/src 里已有的 .js（不复制、不删目录）：
+  // 主进程 TS 已由 tsc 编译为 .js，renderer 已由 vite 构建好。
   let count = 0;
   walk(OUT, (file) => {
     if (!file.endsWith('.js')) return;
+    // vite 产物（renderer/assets/*.js 已压缩打包）跳过：再混淆无收益且可能破坏
+    // React 运行时；public 里散落的经典脚本（renderer/scripts/**）维持原有混淆策略。
+    if (/[\\/]renderer[\\/]assets[\\/]/.test(file)) return;
     const base = path.basename(file);
     if (SKIP.has(base)) return;
     const code = fs.readFileSync(file, 'utf8');
@@ -131,7 +129,15 @@ function obfuscateAll() {
     count++;
   });
   console.log(`[obfuscate] 已混淆 ${count} 个 JS 文件 -> .build/src`);
+  return count;
 }
 
-module.exports = { obfuscateAll };
+function obfuscateAll() {
+  if (fs.existsSync(OUT)) fs.rmSync(OUT, { recursive: true, force: true });
+  copyTree(SRC, OUT);
+  const count = obfuscateWalkOnly();
+  return count;
+}
+
+module.exports = { obfuscateAll, obfuscateExisting: obfuscateWalkOnly };
 if (require.main === module) obfuscateAll();

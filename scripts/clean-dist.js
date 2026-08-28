@@ -57,10 +57,45 @@ function runClean() {
   console.log(`[clean-dist] 完成，移除 ${removed} 项；当前版本 ${version} 产物已保留`);
 }
 
+// 构建后清理：electron-builder 每次打包都会在输出目录生成 builder-debug.yml
+//（无官方配置关闭），连同可能残留的 blockmap / latest*.yml 一起递归删除。
+// 只删元数据文件，不动 win-unpacked 与安装包，可直接挂在 build/release 脚本尾部。
+function cleanMetaRecursive() {
+  const root = path.join(__dirname, '..');
+  const distDir = path.join(root, 'dist');
+  const targets = [];
+  if (!fs.existsSync(distDir)) return 0;
+  const walk = (dir) => {
+    let entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (_) { return; }
+    for (const ent of entries) {
+      const full = path.join(dir, ent.name);
+      if (ent.isDirectory()) {
+        if (ent.name === 'node_modules') continue;
+        walk(full);
+      } else if (/(^|\.)latest.*\.ya?ml$/.test(ent.name) ||
+                 /^builder-.*\.ya?ml$/.test(ent.name) ||
+                 /\.blockmap$/.test(ent.name)) {
+        targets.push(full);
+      }
+    }
+  };
+  walk(distDir);
+  for (const f of targets) {
+    try {
+      fs.rmSync(f, { force: true });
+      console.log('[clean-meta] 删除: ' + path.relative(root, f));
+    } catch (e) {
+      console.warn('[clean-meta] 删除失败 ' + f + ': ' + e.message);
+    }
+  }
+  return targets.length;
+}
+
 // 直接运行时执行；被 require 时仅导出函数、不自动执行（build-pipeline 会自行调用）。
 if (require.main === module) {
   runClean();
   process.exit(0);
 }
 
-module.exports = { runClean };
+module.exports = { runClean, cleanMetaRecursive };

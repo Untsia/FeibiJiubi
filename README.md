@@ -3,7 +3,7 @@
 > 一款基于 Electron 的《鸣潮》**唤取（抽卡）记录分析工具**。
 > 自动读取本机游戏客户端的唤取记录，生成概率、保底、垫抽、奇藏与养成等级的可视化分析报告。数据**本地读取、本地存储、本地分析**，永不出本机。
 
-![Version](https://img.shields.io/badge/version-1.6.0-ff7a4d)
+![Version](https://img.shields.io/badge/version-1.7.0-ff7a4d)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows-0078d6)
 ![Electron](https://img.shields.io/badge/Electron-44-47848F)
@@ -119,7 +119,7 @@ npm start
 
 | 模块    | 选型                    | 说明                                  |
 | ----- | --------------------- | ----------------------------------- |
-| 运行时   | Electron 44           | 主进程 + 原生渲染进程，**无前端框架**（HTML/CSS/JS） |
+| 运行时   | Electron 44           | 主进程 TypeScript + 渲染进程 React 19（窗口框架 + 分析/设置页全面 React 化；主题视觉 / 浮层通知亦 React 化，遗留脚本仅错误回写桥） |
 | 数据存储  | better-sqlite3        | 运行期数据库（唤取记录 / 设置 / 缓存）              |
 | 图表    | 内联 SVG / canvas 自绘    | 无第三方图表库；含迷你趋势线 sparkline            |
 | 网络    | axios                 | GitHub Releases 更新检查、唤取接口请求         |
@@ -128,29 +128,35 @@ npm start
 ### 核心数据流
 
 ```
-主进程 (src/core)
-  ├─ main.js                窗口 / 托盘 / 生命周期 / 更新检查
+主进程 (src/main，TypeScript)
+  ├─ main.ts               窗口 / 托盘 / 生命周期 / 更新检查
   ├─ services/analysisGacha 唤取记录抓取与解析（官方接口）
-  └─ services/kujiequTreasure.js   奇藏 / 等级数据同步
-
-渲染进程 (src/renderer)
-  └─ gachaWuwa.js           唤取分析主逻辑（统计 / 视图渲染 / 同步）
-        │  contextBridge (preload.js)
+  └─ services/kujiequTreasure.ts   奇藏 / 等级数据同步
+        │  contextBridge (preload.ts)
         ▼
-  原生 HTML/CSS/JS 界面（扁平实色设计体系）
+渲染进程 (src/renderer-react)
+  ├─ React 应用          窗口框架 + 分析 / 设置页（全面 React 化）
+  │    ├─ gacha/          分析页数据链路（data.ts / treasure.ts / store.ts / views/*）
+  │    ├─ theme/          主题视觉应用（background.ts / utils.ts）
+  │    └─ notification/   全局浮层通知（store.ts / NotificationHost.tsx）
+  └─ legacy.ts 注入遗留脚本   renderer.js（错误回写桥，须最早注册）
+        │
+        ▼
+  React 状态驱动 UI + 扁平实色设计体系（UI 字节不变）
 ```
 
 ### 项目结构
 
 ```
 src/
-├── core/                    主进程业务逻辑
-│   ├── app/                 日志 / 数据库 / 数据目录
-│   └── services/            抽卡分析 / 奇藏 / 设置 / 背景
-└── renderer/                渲染进程
-    ├── views/               分析页 / 设置页
-    ├── styles/              全局设计 Token 与各页样式
-    └── scripts/             页面逻辑与工具
+├── assets/                  应用图标
+├── main/                    主进程（TypeScript）
+│   ├── main.ts / preload.ts
+│   └── core/                日志 / 数据库 / 数据目录 / 安全自检
+│       └── services/        抽卡分析 / 奇藏 / 设置 / 背景
+└── renderer-react/          渲染进程
+    ├── src/                 React 应用（main.tsx / App.tsx / GameToolsPage / SettingsPage / gacha/ 数据链路 / theme/ / notification/ / legacy.ts）
+    └── public/              静态资产（styles / scripts / assets / fonts）
 ```
 
 完整结构详见 [`PROJECT_STRUCTURE.md`](./PROJECT_STRUCTURE.md)。

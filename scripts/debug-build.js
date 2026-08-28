@@ -1,5 +1,5 @@
 'use strict';
-// DebugB/C 快速构建：复制 src -> .build 且可选择
+// DebugB/C 快速构建：编译主进程 TS + 布局资源（compile-main.js）且可选择
 //   a) 是否跑 P1 混淆（core / renderer）
 //   b) 是否额外强混淆 main / preload（--obfuscate-main-preload）
 // 独立于 build-pipeline.js，用于「分层定位哪一步破坏 reportRenderError / 视图初始化」
@@ -7,33 +7,19 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { compileMain } = require('./compile-main.js');
 
 const argv = process.argv.slice(2);
 const opts = {
   skipObfuscate: argv.includes('--skip-obfuscate'),
 };
 
-const SRC = path.join(__dirname, '..', 'src');
 const OUT = path.join(__dirname, '..', '.build', 'src');
+const OUT_MAIN = path.join(OUT, 'main');
 
-function copyTree(srcDir, dstDir) {
-  fs.rmSync(dstDir, { recursive: true, force: true });
-  fs.mkdirSync(dstDir, { recursive: true });
-  for (const entry of fs.readdirSync(srcDir, { withFileTypes: true })) {
-    const full = path.join(srcDir, entry.name);
-    const dst = path.join(dstDir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name === 'node_modules' || entry.name === '.git') continue;
-      copyTree(full, dst);
-    } else {
-      fs.copyFileSync(full, dst);
-    }
-  }
-}
-
-// 1. 先复制 src -> .build/src
-copyTree(SRC, OUT);
-console.log('[debug-build] 已复制 src -> .build/src');
+// 1. 编译主进程 TS + 拷贝 renderer/assets（替代旧的 copyTree(src -> .build/src)）
+compileMain();
+console.log('[debug-build] 主进程 TS 编译完成，renderer/assets 已布局');
 
 // 可选：原生模块（若已编译过）
 const nativeOut = path.join(OUT, 'feibijiubi_core.node');
@@ -45,10 +31,10 @@ if (fs.existsSync(builtNode) && !fs.existsSync(nativeOut)) {
 
 // 2. P1 混淆
 if (!opts.skipObfuscate) {
-  console.log('[debug-build] 运行 P1 obfuscateAll');
+  console.log('[debug-build] 运行 P1 obfuscateExisting（编译产物原位混淆）');
   const obf = require('./obfuscate.js');
-  obf.obfuscateAll();
-  // --obfuscate-main-preload: obfuscateAll 默认会跳过 main.js/preload.js，
+  obf.obfuscateExisting();
+  // --obfuscate-main-preload: obfuscateExisting 默认会跳过 main.js/preload.js，
   // 这里单独再跑一次强混淆（替代已弃用的 bytenode 字节码，与 build-pipeline P2 一致）。
   if (argv.includes('--obfuscate-main-preload')) {
     console.log('[debug-build] 为 main.js / preload.js 单独跑强混淆（替代 bytenode）');
@@ -65,9 +51,8 @@ if (!opts.skipObfuscate) {
       disableConsoleOutput: false, debugProtection: false,
     };
     const JSOb = require('javascript-obfuscator');
-    const OUT2 = path.join(__dirname, '..', '.build', 'src');
     for (const rel of ['main.js', 'preload.js']) {
-      const f = path.join(OUT2, rel);
+      const f = path.join(OUT_MAIN, rel);
       if (!fs.existsSync(f)) { console.warn('[debug-build] 跳过 ' + rel + '（不存在）'); continue; }
       const src = fs.readFileSync(f, 'utf8');
       const obfuscated = JSOb.obfuscate(src, cfg).getObfuscatedCode();
@@ -81,19 +66,19 @@ if (!opts.skipObfuscate) {
 
 // 4. 版本注入
 function injectAssetVersions() {
-  const indexPath = path.join(OUT, 'renderer', 'index.html');
+  const indexPath = path.join(OUT_MAIN, 'renderer', 'index.html');
   if (!fs.existsSync(indexPath)) return;
   let html = fs.readFileSync(indexPath, 'utf8');
-  const assetRe = /((?:href|src)=")(styles|scripts)\/([A-Za-z0-9_\-/.]+?\.(?:css|js))(?:\?([^"]*))?"/g;
+  const assetRe = /((?:href|src)=")((?:\/|\.\/)?)(styles|scripts)\/([A-Za-z0-9_\-/.]+?\.(?:css|js))(?:\?([^"]*))?"/g;
   let count = 0;
-  html = html.replace(assetRe, (match, open, dir, file, query) => {
-    const full = path.join(OUT, 'renderer', dir, file);
+  html = html.replace(assetRe, (match, open, prefix, dir, file, query) => {
+    const full = path.join(OUT_MAIN, 'renderer', dir, file);
     if (!fs.existsSync(full)) return match;
     const hash = crypto.createHash('md5').update(fs.readFileSync(full)).digest('hex').slice(0, 8);
     count++;
     const rest = (query || '').split('&').filter(k => k !== '' && !k.startsWith('v=')).join('&');
     const q = ['v=' + hash, rest && rest !== '' ? rest : ''].filter(Boolean).join('&');
-    return `${open}${dir}/${file}?${q}"`;
+    return `${open}${prefix}${dir}/${file}?${q}"`;
   });
   fs.writeFileSync(indexPath, html);
   console.log(`[debug-build] 版本注入：${count} 个资源`);
