@@ -6,14 +6,15 @@
  *  - check-update 守卫逻辑：远端版本不高于当前版本时 hasUpdate 必须为 false（不误弹更新窗）
  *  - installer.nsh 存在性 + 关键进程结束宏存在（更新场景不会死循环「请手动关闭」）
  *
- * compareVersion 与 check-update 守卫从 src/main.js 真实源码提取，避免逻辑漂移。
+ * compareVersion 与 check-update 守卫从编译产物 .build/src/main/main.js（tsc 输出）提取，
+ * 与运行时行为一致并避免逻辑漂移。
  */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const MAIN_SRC = fs.readFileSync(path.join(__dirname, '..', 'src', 'main.js'), 'utf8');
+const MAIN_SRC = fs.readFileSync(path.join(__dirname, '..', '.build', 'src', 'main', 'main.js'), 'utf8');
 
 // 从真实源码抽取 compareVersion 纯函数
 function extractCompareVersion() {

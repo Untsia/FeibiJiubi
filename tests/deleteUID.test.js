@@ -2,7 +2,7 @@ require('./_mocks');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { ipcHandlers, dbMock } = require('./_mocks');
-require('../src/core/services/analysisGacha/deleteUID'); // 注册 delete-gacha-records handler
+require('../.build/src/main/core/services/analysisGacha/deleteUID'); // 注册 delete-gacha-records handler
 
 // ---------- 场景 1：table 参数已移除，固定删除 gacha_logs（传入任意表名均忽略） ----------
 test('delete-gacha-records 忽略传入的 table 参数，固定删除 gacha_logs', async () => {

@@ -61,8 +61,8 @@ Module._load = function (request, parent, isMain) {
 };
 
 const { ipcHandlers, mockAxios, dbMock } = require('./_mocks');
-require('../src/core/services/analysisGacha/analysisIpc');
-const gachaRecordsCache = require('../src/core/services/analysisGacha/gachaRecordsCache');
+require('../.build/src/main/core/services/analysisGacha/analysisIpc');
+const gachaRecordsCache = require('../.build/src/main/core/services/analysisGacha/gachaRecordsCache');
 // get-gacha-records 引入了内存缓存：每个用例前重置，避免前一个用例 mock 的数据串到后一个用例
 test.beforeEach(() => gachaRecordsCache.invalidate());
 

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>菲比啾比</title>
+    <script>
+        // 首帧主题同步：主题类（theme-light/theme-cool）由 theme/background.ts
+        // （React 挂载后经 applyAppBackground 应用）设置，首帧时 <body> 尚无主题类，
+        // CSS 变量默认是深色 —— 浅色主题用户启动时会先显示深色底、再切浅色，形成
+        // 「闪黑屏」。这里在样式解析前，用上次缓存的主题（theme/background.ts 每次
+        // 应用主题时写入 localStorage 'fbi_theme'）同步挂到 <html>，让首帧 CSS 变量
+        // 就命中用户当前主题。无缓存时回退默认（深色），不闪。
+        (function () {
+            try {
+                var t = localStorage.getItem('fbi_theme');
+                if (t) {
+                    var h = document.documentElement;
+                    if (t.indexOf('light') === 0) h.classList.add('theme-light');
+                    if (t.indexOf('cool') > 0) h.classList.add('theme-cool');
+                }
+            } catch (e) { /* localStorage 不可用（如隐私模式）时静默忽略 */ }
+        })();
+    </script>
+    <!-- 静态资源全部来自 public/（vite 原样拷贝，保证 UI 字节不变）：
+         local://app/index.html 下统一解析为 local://app/styles/... -->
+    <link rel="stylesheet" href="/styles/main.css?v=57">
+    <link rel="stylesheet" href="/styles/settings.css?v=0">
+    <!-- 预加载子页面样式到主文档：避免 innerHTML 注入后动态 <link> 延迟加载
+         造成首帧无样式布局（FOUC，“DOM 从左侧向四周扩散摊开”的回跳） -->
+    <link rel="stylesheet" href="/styles/gameTools/gachaWuwa.css?v=58">
+    <link rel="stylesheet" href="/styles/gameTools.css?v=13">
+</head>
+<body>
+    <!-- React 应用：渲染窗口框架（标题栏 / 侧边栏 / 内容容器 / 更新弹窗）。
+         结构与旧的静态 index.html 完全一致（字节不变），页面内容 / 主题视觉 / 浮层
+         通知均 React 化，仅 renderer.js 错误回写桥经 legacy.ts 注入。 -->
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>
